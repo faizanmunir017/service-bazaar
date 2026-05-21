@@ -23,7 +23,12 @@ export default function MyBookingsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${getBackendBase()}/api/bookings`)
+    const base = getBackendBase();
+    if (!base) {
+      setLoading(false);
+      return;
+    }
+    fetch(`${base}/api/bookings`)
       .then((res) => res.json())
       .then((data) => {
         setBookings(data.bookings ? data.bookings.reverse() : []);
