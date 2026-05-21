@@ -18,7 +18,7 @@ export default function Header({ title, showBack = false }) {
     ]}>
       <View style={[styles.left, isRTL && { alignItems: 'flex-end' }]}>
         {showBack && (
-          <TouchableOpacity onPress={() => navigate('Dashboard')} style={styles.iconBtn}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => navigate('Dashboard')} style={styles.iconBtn}>
             <ChevronLeft color={theme.text} size={24} style={isRTL && { transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
         )}
@@ -29,12 +29,12 @@ export default function Header({ title, showBack = false }) {
       </Text>
       
       <View style={[styles.right, { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12 }]}>
-        <TouchableOpacity onPress={toggleLanguage} style={styles.iconBtn}>
+        <TouchableOpacity activeOpacity={0.7} onPress={toggleLanguage} style={styles.iconBtn}>
           <Text style={[styles.langText, { color: theme.primary }]}>
             {locale === 'en' ? 'اردو' : 'EN'}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={toggleTheme} style={styles.iconBtn}>
+        <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} style={styles.iconBtn}>
           {isDark ? <Sun color={theme.text} size={20} /> : <Moon color={theme.text} size={20} />}
         </TouchableOpacity>
       </View>

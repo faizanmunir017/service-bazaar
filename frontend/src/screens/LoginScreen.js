@@ -24,8 +24,9 @@ export default function LoginScreen() {
     >
       <View style={styles.card}>
         {/* Language selector on startup page */}
-        <TouchableOpacity 
-          onPress={toggleLanguage} 
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={toggleLanguage}
           style={[styles.langBtn, { borderColor: theme.border, alignSelf: isRTL ? 'flex-start' : 'flex-end' }]}
         >
           <Text style={{ color: theme.primary, fontWeight: 'bold' }}>

@@ -4,9 +4,18 @@ const LanguageContext = createContext();
 
 const translations = {
   en: {
+    selectLocation: "Select Location",
+    change: "Change",
+    confirmBookingTitle: "Confirm Booking",
+    confirmBookingMessage: "Do you want to proceed with the booking?",
+    yes: "Yes",
+    no: "No",
+    serviceNotAvailable: "Sorry, our services are currently not available in {{loc}}. Please select another location.",
+    // existing keys...
     // Header
     dashboard: "Dashboard",
     serviceAssistant: "Service Assistant",
+    // Add other keys unchanged
     
     // Login
     appName: "ServiceBazaar",
@@ -34,13 +43,22 @@ const translations = {
     feedbackTitle: "Service Lifecycle Feedback",
     feedbackPlaceholder: "File quality complaints, damages, or pricing disputes here...",
     submitFeedback: "Submit Lifecycle Feedback",
-    fallbackMsg: "System Note: Connecting via fallback channel. Please hold..."
+    fallbackMsg: "We are connecting you securely. Please hold on a moment...",
+    pollConnectionError: "We're experiencing technical difficulties connecting to the service. Please check your internet connection.",
   },
   ur: {
     // Header
     dashboard: "ڈیش بورڈ",
     serviceAssistant: "سروس اسسٹنٹ",
     
+    // Header
+    // Added UI strings
+    selectLocation: "موقع منتخب کریں",
+    change: "تبدیل کریں",
+    confirmBookingTitle: "بکنگ کی تصدیق کریں",
+    confirmBookingMessage: "کیا آپ بکنگ کے ساتھ آگے بڑھنا چاہتے ہیں؟",
+    yes: "جی ہاں",
+    no: "نہیں",
     // Login
     appName: "سروس بازار",
     loginTitle: "اپنے اکاؤنٹ میں لاگ ان کریں",
@@ -67,15 +85,22 @@ const translations = {
     feedbackTitle: "سروس لائف سائیکل فیڈ بیک",
     feedbackPlaceholder: "کوالٹی کی شکایات، نقصانات، یا قیمت کے تنازعات یہاں درج کریں...",
     submitFeedback: "فیڈ بیک جمع کروائیں",
-    fallbackMsg: "سسٹم نوٹ: متبادل چینل کے ذریعے رابطہ قائم کیا جا رہا ہے۔ براہ کرم انتظار کریں..."
-  }
+    fallbackMsg: "سسٹم نوٹ: متبادل چینل کے ذریعے رابطہ قائم کیا جا رہا ہے۔ براہ کرم انتظار کریں...",
+    pollConnectionError: "سرور تک رسائی ممکن نہیں۔ اپنا کنکشن اور بیک اینڈ چیک کریں۔",
+    serviceNotAvailable: "معذرت، ہماری خدمات فی الحال {{loc}} میں دستیاب نہیں ہیں۔ براہ کرم کوئی اور مقام منتخب کریں۔",
+    }
 };
 
 export const LanguageProvider = ({ children }) => {
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [locale, setLocale] = useState('en'); // 'en' | 'ur'
 
-  const t = (key) => {
-    return translations[locale][key] || key;
+  const t = (key, params = {}) => {
+    let str = translations[locale][key] || key;
+    Object.keys(params).forEach(p => {
+      str = str.replace(`{{${p}}}`, params[p]);
+    });
+    return str;
   };
 
   const toggleLanguage = () => {
@@ -85,7 +110,7 @@ export const LanguageProvider = ({ children }) => {
   const isRTL = locale === 'ur';
 
   return (
-    <LanguageContext.Provider value={{ locale, t, toggleLanguage, setLocale, isRTL }}>
+    <LanguageContext.Provider value={{ locale, t, toggleLanguage, setLocale, isRTL, selectedLocation, setSelectedLocation }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -15,7 +15,6 @@ export default function DashboardScreen() {
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Pulse animation for the central logo container
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -31,7 +30,6 @@ export default function DashboardScreen() {
       ])
     ).start();
 
-    // Subtle up/down floating animation for extra premium visual polish
     Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
@@ -55,12 +53,10 @@ export default function DashboardScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header title={t('dashboard')} />
-      
+
       <View style={styles.centerContainer}>
-        {/* Decorative background ambient glows (glassmorphism feel) */}
         <View style={[styles.ambientGlow, { backgroundColor: theme.primary + '15', top: '25%' }]} />
-        
-        {/* Welcome Section */}
+
         <View style={styles.welcomeSection}>
           <Text style={[styles.greeting, { color: theme.textSecondary }]}>
             {t('welcome')}
@@ -70,57 +66,67 @@ export default function DashboardScreen() {
           </Text>
         </View>
 
-        {/* Central pulsing, floating chat initiator */}
-        <Animated.View style={[
-          styles.interactiveWrapper,
-          { 
-            transform: [
-              { scale: pulseAnim },
-              { translateY: floatAnim }
-            ] 
-          }
-        ]}>
+        <Animated.View
+          style={[
+            styles.interactiveWrapper,
+            {
+              transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
+            },
+          ]}
+        >
           <TouchableOpacity
+            activeOpacity={0.85}
             style={[
-              styles.centralCircle, 
-              { 
-                backgroundColor: theme.surface, 
+              styles.centralCircle,
+              {
+                backgroundColor: theme.surface,
                 borderColor: theme.primary + '40',
-                shadowColor: theme.primary
-              }
+                shadowColor: theme.primary,
+              },
             ]}
             onPress={handleStartChat}
-            activeOpacity={0.85}
           >
             <View style={[styles.innerCircle, { backgroundColor: theme.primary + '15' }]}>
               <MessageSquare color={theme.primary} size={50} />
-              <Sparkles 
-                color={theme.primary} 
-                size={22} 
-                style={styles.sparkleIcon} 
-              />
+              <Sparkles color={theme.primary} size={22} style={styles.sparkleIcon} />
             </View>
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Dynamic CTA pill button */}
         <TouchableOpacity
+          activeOpacity={0.8}
           style={[
-            styles.ctaButton, 
-            { 
+            styles.ctaButton,
+            {
               backgroundColor: theme.primary,
-              flexDirection: isRTL ? 'row-reverse' : 'row'
-            }
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+            },
           ]}
           onPress={handleStartChat}
-          activeOpacity={0.8}
         >
           <Text style={styles.ctaText}>
-            {isRTL ? "سروس اسسٹنٹ سے بات کریں" : "Consult AI Assistant"}
+            {isRTL ? 'سروس اسسٹنٹ سے بات کریں' : 'Consult AI Assistant'}
           </Text>
           <View style={[styles.arrowWrapper, isRTL && { transform: [{ rotate: '180deg' }] }]}>
             <ArrowRight color="#ffffff" size={20} />
           </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={[
+            styles.secondaryButton,
+            {
+              borderColor: theme.primary,
+              borderWidth: 1.5,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+            },
+          ]}
+          onPress={() => navigate('MyBookings')}
+        >
+          <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>
+            {isRTL ? 'میری بکنگز دیکھیں' : 'View My Bookings'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -143,7 +149,7 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     borderRadius: 125,
-    filter: Platform.OS === 'web' ? 'blur(80px)' : undefined, // blur filter on web if loaded there
+    filter: Platform.OS === 'web' ? 'blur(80px)' : undefined,
     opacity: 0.6,
     zIndex: -1,
   },
@@ -227,5 +233,18 @@ const styles = StyleSheet.create({
   arrowWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
-  }
+  },
+  secondaryButton: {
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.2,
+  },
 });
