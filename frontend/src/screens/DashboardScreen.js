@@ -105,7 +105,7 @@ export default function DashboardScreen() {
           onPress={handleStartChat}
         >
           <Text style={styles.ctaText}>
-            {isRTL ? 'سروس اسسٹنٹ سے بات کریں' : 'Consult AI Assistant'}
+            {t('consultAssistant')}
           </Text>
           <View style={[styles.arrowWrapper, isRTL && { transform: [{ rotate: '180deg' }] }]}>
             <ArrowRight color="#ffffff" size={20} />
@@ -125,7 +125,7 @@ export default function DashboardScreen() {
           onPress={() => navigate('MyBookings')}
         >
           <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>
-            {isRTL ? 'میری بکنگز دیکھیں' : 'View My Bookings'}
+            {t('viewMyBookings')}
           </Text>
         </TouchableOpacity>
       </View>

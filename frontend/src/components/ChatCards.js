@@ -6,17 +6,18 @@ import { Card, Badge, FactorBar, SectionHeader, PrimaryButton } from './UICompon
 
 export const IntentCard = ({ intent }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   if (!intent) return null;
   
   return (
     <Card style={styles.chatCard}>
-      <Text style={[styles.cardTitle, { color: theme.text }]}>Service Understood</Text>
+      <Text style={[styles.cardTitle, { color: theme.text }]}>{t('serviceUnderstood')}</Text>
       <View style={styles.row}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Service:</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>{t('confirmService')}:</Text>
         <Text style={[styles.value, { color: theme.text }]}>{intent.service_type || 'Unknown'}</Text>
       </View>
       <View style={styles.row}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Location:</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>{t('confirmLocation')}:</Text>
         <Text style={[styles.value, { color: theme.text }]}>{intent.location || 'Unknown'}</Text>
       </View>
       <View style={styles.row}>
@@ -32,13 +33,14 @@ export const IntentCard = ({ intent }) => {
 
 export const ProviderMatchCard = ({ match }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   if (!match || !match.selected) return null;
   
   const p = match.selected;
   
   return (
     <Card style={styles.chatCard}>
-      <Text style={[styles.cardTitle, { color: theme.text }]}>Provider Matched</Text>
+      <Text style={[styles.cardTitle, { color: theme.text }]}>{t('providerMatched')}</Text>
       <View style={styles.providerHeader}>
         <View style={[styles.avatar, { backgroundColor: theme.primary + '33' }]}>
           <Text style={[styles.avatarText, { color: theme.primary }]}>{p.name?.charAt(0) || 'P'}</Text>
@@ -56,11 +58,12 @@ export const ProviderMatchCard = ({ match }) => {
 
 export const PricingCard = ({ pricing }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   if (!pricing) return null;
   
   return (
     <Card style={styles.chatCard}>
-      <Text style={[styles.cardTitle, { color: theme.text }]}>Estimated Price</Text>
+      <Text style={[styles.cardTitle, { color: theme.text }]}>{t('estimatedPriceCard')}</Text>
       <Text style={[styles.priceLarge, { color: theme.primary }]}>Rs. {pricing.final_price || pricing.estimated_total}</Text>
       <Text style={[styles.priceDetail, { color: theme.textSecondary }]}>{pricing.breakdown_md?.substring(0, 100)}...</Text>
     </Card>
@@ -103,10 +106,11 @@ export const ClarificationCard = ({ message, questions }) => {
 
 export const ErrorCard = ({ message }) => {
   const { theme } = useTheme();
-  
+  const { t } = useLanguage();
+
   return (
     <Card style={[styles.chatCard, { backgroundColor: 'rgba(244, 67, 54, 0.1)', borderColor: '#F44336', borderWidth: 1 }]}>
-      <Text style={[styles.cardTitle, { color: '#F44336' }]}>Error</Text>
+      <Text style={[styles.cardTitle, { color: '#F44336' }]}>{t('errorCardTitle')}</Text>
       <Text style={[styles.messageText, { color: theme.text }]}>{message}</Text>
     </Card>
   );

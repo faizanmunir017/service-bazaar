@@ -19,12 +19,13 @@ import {
 import { ClarificationCard, ErrorCard } from '../components/ChatCards';
 import ConfirmBookingModal from '../components/ConfirmBookingModal';
 
-const PIPELINE_STEPS = ["Analyzing your request...", "Checking availability...", "Finalizing details..."];
 
 export default function ChatScreen() {
   const { theme } = useTheme();
   const { params, navigate } = useNavigation();
   const { t, isRTL, locale, selectedLocation, setSelectedLocation } = useLanguage();
+
+  const PIPELINE_STEPS = [t('pipeline1'), t('pipeline2'), t('pipeline3')];
   const { showToast } = useToast();
 
   const [messages, setMessages] = useState([
@@ -50,6 +51,12 @@ export default function ChatScreen() {
   const sendingRef = useRef(false);
   const pollHandledRef = useRef(false);
   const pollInFlightRef = useRef(false);
+
+  useEffect(() => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === 'init' ? { ...m, text: t('chatInit') } : m))
+    );
+  }, [locale, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,7 +173,7 @@ export default function ChatScreen() {
       return;
     }
     const data = confirmed.data?.data || confirmed.data || {};
-    showToast(`Booking confirmed — ${data.booking_id || ''}`);
+      showToast(t('bookingConfirmedToast', { id: data.booking_id || '' }));
     goToBookingConfirmation(data);
   };
 
@@ -187,7 +194,7 @@ export default function ChatScreen() {
     if (result.status === 'processed') {
       finishTerminal();
       const payload = result.data || {};
-      showToast(`Booking confirmed — ${payload.booking_id || ''}`);
+      showToast(t('bookingConfirmedToast', { id: payload.booking_id || '' }));
       goToBookingConfirmation(payload);
       return true;
     }
@@ -197,7 +204,7 @@ export default function ChatScreen() {
     }
     if (result.status === 'clarification_needed') {
       finishTerminal();
-      const note = result.data?.orchestrator_note || 'Clarification needed.';
+      const note = result.data?.orchestrator_note || t('clarificationNeeded');
       const questions = result.data?.questions || [];
       setMessages(prev => {
         const duplicate = prev.some(
@@ -256,7 +263,7 @@ export default function ChatScreen() {
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'error',
-            text: 'Request timed out. Please try again.',
+            text: t('requestTimeout'),
             timestamp: new Date().toISOString()
           }]);
         }
@@ -363,15 +370,15 @@ export default function ChatScreen() {
 
   const renderLocationSelector = () => (
     <View style={styles.locationSelector}>
-      <Text style={[styles.selectorTitle, { color: theme.text, textAlign: 'center' }]}>We currently service only Islamabad</Text>
+      <Text style={[styles.selectorTitle, { color: theme.text, textAlign: 'center' }]}>{t('islamabadOnlyTitle')}</Text>
       <Text style={{ color: theme.text, marginVertical: 12, textAlign: 'center' }}>
-        Our services are not yet available in Lahore,Karachi or any other area. Please continue with Islamabad.
+        {t('islamabadOnlyDesc')}
       </Text>
       <TouchableOpacity
         style={[styles.locationButton, { backgroundColor: theme.primary, alignSelf: 'center', width: '60%' }]}
         onPress={() => setSelectedLocation('Islamabad')}
       >
-        <Text style={styles.locationButtonText}>Proceed with Islamabad</Text>
+        <Text style={styles.locationButtonText}>{t('proceedIslamabad')}</Text>
       </TouchableOpacity>
     </View>
   );

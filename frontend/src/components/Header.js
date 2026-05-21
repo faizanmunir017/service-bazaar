@@ -19,7 +19,9 @@ export default function Header({ title, showBack = false }) {
       <View style={[styles.left, isRTL && { alignItems: 'flex-end' }]}>
         {showBack && (
           <TouchableOpacity activeOpacity={0.7} onPress={() => navigate('Dashboard')} style={styles.iconBtn}>
-            <ChevronLeft color={theme.text} size={24} style={isRTL && { transform: [{ rotate: '180deg' }] }} />
+            <View style={isRTL ? { transform: [{ rotate: '180deg' }] } : undefined}>
+              <ChevronLeft color={theme.text} size={24} />
+            </View>
           </TouchableOpacity>
         )}
       </View>
