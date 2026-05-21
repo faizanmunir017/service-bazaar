@@ -9,8 +9,15 @@ import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import Header from '../components/Header';
 import { Send, MapPin } from 'lucide-react-native';
-import { checkBackendHealth, submitServiceRequest, pollServiceResponse } from '../api/serviceApi';
+import {
+  checkBackendHealth,
+  submitServiceRequest,
+  pollServiceResponse,
+  confirmBooking,
+  cancelPendingBooking,
+} from '../api/serviceApi';
 import { ClarificationCard, ErrorCard } from '../components/ChatCards';
+import ConfirmBookingModal from '../components/ConfirmBookingModal';
 
 const PIPELINE_STEPS = ["Analyzing your request...", "Checking availability...", "Finalizing details..."];
 
@@ -32,11 +39,17 @@ export default function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [pipelineStep, setPipelineStep] = useState(0);
   const [backendConnected, setBackendConnected] = useState(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState(null);
+  const [confirmingBooking, setConfirmingBooking] = useState(false);
 
   const scrollViewRef = useRef();
   const keyboardOffset = useRef(new Animated.Value(0)).current;
   const pollIntervalRef = useRef(null);
   const pipelineIntervalRef = useRef(null);
+  const sendingRef = useRef(false);
+  const pollHandledRef = useRef(false);
+  const pollInFlightRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,43 +121,111 @@ export default function ChatScreen() {
     }
   };
 
+  const goToBookingConfirmation = (payload) => {
+    navigate('BookingConfirmation', {
+      booking_id: payload.booking_id,
+      intent: payload.intent,
+      match: payload.match,
+      pricing: payload.pricing,
+      payment: payload.payment,
+      booking: payload.booking,
+    });
+  };
+
+  const promptConfirmBooking = (payload) => {
+    setPendingBooking(payload);
+    setConfirmModalVisible(true);
+  };
+
+  const handleDeclineBooking = async () => {
+    setConfirmModalVisible(false);
+    setPendingBooking(null);
+    await cancelPendingBooking();
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      type: 'system',
+      text: t('bookingDeclined'),
+      timestamp: new Date().toISOString(),
+    }]);
+  };
+
+  const handleAcceptBooking = async () => {
+    setConfirmingBooking(true);
+    const confirmed = await confirmBooking();
+    setConfirmingBooking(false);
+    setConfirmModalVisible(false);
+    setPendingBooking(null);
+
+    if (!confirmed.ok) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'error',
+        text: confirmed.error || t('fallbackMsg'),
+        timestamp: new Date().toISOString(),
+      }]);
+      return;
+    }
+    const data = confirmed.data?.data || confirmed.data || {};
+    showToast(`Booking confirmed — ${data.booking_id || ''}`);
+    goToBookingConfirmation(data);
+  };
+
   const handlePollResult = (result) => {
-    if (result.status === 'processed') {
+    if (pollHandledRef.current) return true;
+
+    const finishTerminal = () => {
+      pollHandledRef.current = true;
       stopPolling();
       setIsLoading(false);
+    };
+
+    if (result.status === 'awaiting_confirmation') {
+      finishTerminal();
+      promptConfirmBooking(result.data || {});
+      return true;
+    }
+    if (result.status === 'processed') {
+      finishTerminal();
       const payload = result.data || {};
       showToast(`Booking confirmed — ${payload.booking_id || ''}`);
-      navigate('BookingConfirmation', {
-        booking_id: payload.booking_id,
-        intent: payload.intent,
-        match: payload.match,
-        pricing: payload.pricing,
-        payment: payload.payment,
-        booking: payload.booking,
-      });
+      goToBookingConfirmation(payload);
+      return true;
+    }
+    if (result.status === 'cancelled') {
+      finishTerminal();
       return true;
     }
     if (result.status === 'clarification_needed') {
-      stopPolling();
-      setIsLoading(false);
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-        type: 'clarification',
-        text: result.data?.orchestrator_note || 'Clarification needed.',
-        questions: result.data?.questions || [],
-        timestamp: new Date().toISOString()
-      }]);
+      finishTerminal();
+      const note = result.data?.orchestrator_note || 'Clarification needed.';
+      const questions = result.data?.questions || [];
+      setMessages(prev => {
+        const duplicate = prev.some(
+          (m) => m.type === 'clarification' && m.text === note
+        );
+        if (duplicate) return prev;
+        return [...prev, {
+          id: `clar-${Date.now()}`,
+          type: 'clarification',
+          text: note,
+          questions,
+          timestamp: new Date().toISOString(),
+        }];
+      });
       return true;
     }
     if (result.status === 'error') {
-      stopPolling();
-      setIsLoading(false);
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-        type: 'error',
-        text: `Swarm Execution Error:\n${result.data?.error_log?.join('\n') || 'Unknown execution issue.'}`,
-        timestamp: new Date().toISOString()
-      }]);
+      finishTerminal();
+      const errText = `Swarm Execution Error:\n${result.data?.error_log?.join('\n') || 'Unknown execution issue.'}`;
+      setMessages(prev => {
+        if (prev.some((m) => m.type === 'error' && m.text === errText)) return prev;
+        return [...prev, {
+          id: `err-${Date.now()}`,
+          type: 'error',
+          text: errText,
+          timestamp: new Date().toISOString(),
+        }];
+      });
       return true;
     }
     return false;
@@ -152,6 +233,8 @@ export default function ChatScreen() {
 
   const startPolling = () => {
     stopPolling();
+    pollHandledRef.current = false;
+    pollInFlightRef.current = false;
 
     setPipelineStep(0);
     pipelineIntervalRef.current = setInterval(() => {
@@ -162,24 +245,33 @@ export default function ChatScreen() {
     const maxPollAttempts = 30;
 
     const runPoll = async () => {
+      if (pollHandledRef.current || pollInFlightRef.current) return;
+
       pollAttempts++;
       if (pollAttempts > maxPollAttempts) {
-        stopPolling();
-        setIsLoading(false);
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          type: 'error',
-          text: 'Request timed out. Please try again.',
-          timestamp: new Date().toISOString()
-        }]);
+        if (!pollHandledRef.current) {
+          pollHandledRef.current = true;
+          stopPolling();
+          setIsLoading(false);
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'error',
+            text: 'Request timed out. Please try again.',
+            timestamp: new Date().toISOString()
+          }]);
+        }
         return;
       }
 
+      pollInFlightRef.current = true;
       try {
         const result = await pollServiceResponse();
-        handlePollResult(result);
+        if (!pollHandledRef.current) {
+          handlePollResult(result);
+        }
       } catch (err) {
-        if (pollAttempts >= 5) {
+        if (!pollHandledRef.current && pollAttempts >= 5) {
+          pollHandledRef.current = true;
           stopPolling();
           setIsLoading(false);
           setMessages(prev => [...prev, {
@@ -189,6 +281,8 @@ export default function ChatScreen() {
             timestamp: new Date().toISOString()
           }]);
         }
+      } finally {
+        pollInFlightRef.current = false;
       }
     };
 
@@ -198,32 +292,43 @@ export default function ChatScreen() {
 
   const handleSend = async (customText = null) => {
     const textToSend = customText !== null ? customText : inputText;
-    if (!textToSend.trim()) return;
+    if (!textToSend.trim() || isLoading || sendingRef.current) return;
 
-    setMessages(prev => [...prev, {
+    sendingRef.current = true;
+    const userMsg = {
       id: `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       type: 'user',
       text: textToSend,
-      timestamp: new Date().toISOString()
-    }]);
+      timestamp: new Date().toISOString(),
+    };
 
+    setMessages(prev => [...prev, userMsg]);
     if (customText === null) setInputText('');
     setIsLoading(true);
 
-    const result = await submitServiceRequest(textToSend, locale, messages.slice(-10).map(m => ({ role: m.type, content: m.text })), selectedLocation);
+    let accepted = false;
+    try {
+      const result = await submitServiceRequest(textToSend, locale, selectedLocation);
 
-    if (result.ok && result.data?.status === 'accepted') {
-      startPolling();
-      return;
+      if (result.ok && result.data?.status === 'accepted') {
+        accepted = true;
+        startPolling();
+        return;
+      }
+
+      setIsLoading(false);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'error',
+        text: result.error || result.data?.message || t('fallbackMsg'),
+        timestamp: new Date().toISOString(),
+      }]);
+    } finally {
+      sendingRef.current = false;
+      if (!accepted) {
+        setIsLoading(false);
+      }
     }
-
-    setIsLoading(false);
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      type: 'error',
-      text: result.error || result.data?.message || t('fallbackMsg'),
-      timestamp: new Date().toISOString(),
-    }]);
   };
 
   const renderMessage = (msg) => {
@@ -233,7 +338,6 @@ export default function ChatScreen() {
           <ClarificationCard
             message={msg.text}
             questions={msg.questions}
-            onSelect={(q) => handleSend(q)}
           />
         </View>
       );
@@ -276,6 +380,14 @@ export default function ChatScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header title={t('serviceAssistant')} showBack={true} />
 
+      <ConfirmBookingModal
+        visible={confirmModalVisible}
+        payload={pendingBooking}
+        confirming={confirmingBooking}
+        onConfirm={handleAcceptBooking}
+        onCancel={handleDeclineBooking}
+      />
+
       {!selectedLocation ? renderLocationSelector() : (
         <>
           <View style={[styles.locationBanner, { backgroundColor: theme.primary + '20' }]}>
@@ -307,7 +419,8 @@ export default function ChatScreen() {
                 placeholderTextColor={theme.textSecondary}
                 value={inputText}
                 onChangeText={setInputText}
-                onSubmitEditing={() => { if (!isLoading) handleSend(null); }}
+                blurOnSubmit={false}
+                onSubmitEditing={() => {}}
                 editable={!isLoading}
                 multiline
               />

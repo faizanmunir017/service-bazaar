@@ -56,4 +56,6 @@ export const API_PATHS = {
   request: '/api/request',
   poll: '/api/poll',
   dispute: '/api/dispute',
+  bookingConfirm: '/api/booking/confirm',
+  bookingCancel: '/api/booking/cancel',
 };

@@ -39,18 +39,57 @@ export async function checkBackendHealth() {
   }
 }
 
-export async function submitServiceRequest(message, locale = 'en') {
+export async function submitServiceRequest(message, locale = 'en', location = null) {
   const base = getBackendBase();
+
   try {
     const response = await fetchWithTimeout(`${base}${API_PATHS.request}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ message, locale }),
+      body: JSON.stringify({
+        message,
+        locale,
+        location: location || null,
+      }),
     });
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       throw new Error(data?.detail || data?.message || `Request failed (${response.status})`);
+    }
+    return { ok: true, data };
+  } catch (error) {
+    return { ok: false, error: formatNetworkError(error) };
+  }
+}
+
+export async function confirmBooking() {
+  const base = getBackendBase();
+  try {
+    const response = await fetchWithTimeout(`${base}${API_PATHS.bookingConfirm}`, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+    }, 15000);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.detail || `Confirm failed (${response.status})`);
+    }
+    return { ok: true, data };
+  } catch (error) {
+    return { ok: false, error: formatNetworkError(error) };
+  }
+}
+
+export async function cancelPendingBooking() {
+  const base = getBackendBase();
+  try {
+    const response = await fetchWithTimeout(`${base}${API_PATHS.bookingCancel}`, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+    }, 8000);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.detail || `Cancel failed (${response.status})`);
     }
     return { ok: true, data };
   } catch (error) {

@@ -45,9 +45,10 @@ export default function BookingConfirmationScreen() {
             {provider.breakdown && (
               <View style={styles.rationaleContainer}>
                 <Text style={[styles.rationaleTitle, { color: theme.textSecondary }]}>Why they were chosen:</Text>
-                <FactorBar label="Reliability" value={provider.breakdown.reliability || 80} max={100} />
-                <FactorBar label="Distance Score" value={provider.breakdown.distance || 80} max={100} />
-                <FactorBar label="Recency Score" value={provider.breakdown.recency || 70} max={100} />
+                <FactorBar label="Reliability" value={provider.breakdown.reliability} />
+                <FactorBar label="Rating" value={provider.breakdown.rating} />
+                <FactorBar label="Distance Score" value={provider.breakdown.distance} />
+                <FactorBar label="Recency Score" value={provider.breakdown.recency} />
               </View>
             )}
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Card, Badge, FactorBar, SectionHeader, PrimaryButton } from './UIComponents';
@@ -67,34 +67,36 @@ export const PricingCard = ({ pricing }) => {
   );
 };
 
-export const ClarificationCard = ({ message, questions, onSelect }) => {
+export const ClarificationCard = ({ message, questions }) => {
   const { theme } = useTheme();
-  const { locale } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const safeQuestions = (questions || []).filter((q) => typeof q === 'string' && q.trim());
-  const hint =
-    locale === 'ur'
-      ? 'یا نیچے جواب لکھ کر بھیجیں۔'
-      : 'Or type your answer below and press send.';
 
   return (
     <Card style={[styles.chatCard, { borderColor: theme.primary, borderWidth: 1 }]}>
-      <Text style={[styles.messageText, { color: theme.text, marginBottom: 12 }]}>{message}</Text>
-      {safeQuestions.length > 0 ? (
-        <View style={styles.chipsContainer}>
-          {safeQuestions.map((q, idx) => (
-            <TouchableOpacity
-              key={idx}
-              activeOpacity={0.75}
-              style={[styles.chip, { backgroundColor: theme.primary + '22', borderColor: theme.primary }]}
-              onPress={() => onSelect(q)}
-            >
-              <Text style={[styles.chipText, { color: theme.primary }]}>{q}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      ) : (
-        <Text style={[styles.messageText, { color: theme.textSecondary, fontSize: 13 }]}>{hint}</Text>
+      <Text style={[styles.messageText, { color: theme.text, marginBottom: safeQuestions.length ? 12 : 8 }]}>
+        {message}
+      </Text>
+      {safeQuestions.length > 0 && (
+        <>
+          <Text style={[styles.missingTitle, { color: theme.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('missingDetailsTitle')}
+          </Text>
+          <View style={styles.chipsContainer}>
+            {safeQuestions.map((q, idx) => (
+              <View
+                key={idx}
+                style={[styles.chip, styles.chipStatic, { backgroundColor: theme.background, borderColor: theme.border }]}
+              >
+                <Text style={[styles.chipText, { color: theme.text }]}>{q}</Text>
+              </View>
+            ))}
+          </View>
+        </>
       )}
+      <Text style={[styles.hintText, { color: theme.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+        {t('clarificationTypeHint')}
+      </Text>
     </Card>
   );
 };
@@ -182,16 +184,34 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginTop: 8,
   },
+  missingTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     marginRight: 8,
     marginBottom: 8,
+    maxWidth: '100%',
+  },
+  chipStatic: {
+    opacity: 1,
   },
   chipText: {
     fontSize: 13,
     fontWeight: '500',
-  }
+    lineHeight: 18,
+  },
+  hintText: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
 });

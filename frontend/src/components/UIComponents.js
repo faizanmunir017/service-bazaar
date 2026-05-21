@@ -70,12 +70,20 @@ export const SectionHeader = ({ title, style }) => {
   );
 };
 
-export const FactorBar = ({ label, value, max = 10, format }) => {
+/** Matcher breakdown uses 0–1; legacy UI used 0–100. Normalize for display. */
+export function normalizeFactorScore(value, fallback = 0) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  if (n <= 1) return Math.round(n * 100);
+  return Math.round(Math.min(100, n));
+}
+
+export const FactorBar = ({ label, value, max = 100, format }) => {
   const { theme } = useTheme();
-  const numeric = Number(value);
-  const safeVal = Number.isFinite(numeric) ? numeric : 0;
-  const safeMax = Number(max) > 0 ? Number(max) : 10;
-  const percentage = Math.max(0, Math.min(100, (safeVal / safeMax) * 100));
+  const displayScore = normalizeFactorScore(value, 0);
+  const safeVal = displayScore;
+  const safeMax = 100;
+  const percentage = Math.max(0, Math.min(100, safeVal));
   
   let barColor = theme.primary;
   if (percentage < 40) barColor = '#F44336';
@@ -86,7 +94,9 @@ export const FactorBar = ({ label, value, max = 10, format }) => {
     <View style={styles.factorContainer}>
       <View style={styles.factorLabelContainer}>
         <Text style={[styles.factorLabel, { color: theme.textSecondary }]}>{label}</Text>
-        <Text style={[styles.factorValue, { color: theme.text }]}>{format ? format(safeVal) : safeVal}</Text>
+        <Text style={[styles.factorValue, { color: theme.text }]}>
+          {format ? format(safeVal) : `${safeVal}%`}
+        </Text>
       </View>
       <View style={[styles.factorTrack, { backgroundColor: theme.border }]}>
         <View style={[styles.factorFill, { width: `${percentage}%`, backgroundColor: barColor }]} />
