@@ -1,0 +1,874 @@
+"""
+ServiceBazaar Backend — FastAPI + 4-Agent Cooperative Swarm
+===========================================================
+Endpoints: POST /api/request, GET /api/poll, POST /api/dispute
+Agents:  1-Intent Parser, 2-Matcher, 3-Pricing, 4-Dispute
+"""
+
+import os, sys, json, uuid, asyncio, re
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Optional
+
+# Force stdout/stderr to utf-8 encoding to prevent Windows cp1252 emoji crashes
+if sys.platform.startswith("win"):
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from dotenv import load_dotenv
+
+# ── paths ──────────────────────────────────────────────────────────
+BASE_DIR  = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+DATA_DIR       = BASE_DIR / "data"
+PROVIDERS_PATH = DATA_DIR / "providers.json"
+REQUEST_PATH   = DATA_DIR / "current_request.json"
+RESPONSE_PATH  = DATA_DIR / "current_response.json"
+LEDGER_PATH    = DATA_DIR / "bookings_ledger.csv"
+TRACES_PATH    = DATA_DIR / "workspace_traces.md"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from tools.maps_client import (
+    haversine_distance, travel_time_minutes,
+    calculate_travel_matrix, resolve_location,
+)
+from tools.services import (
+    append_booking, send_sms, send_whatsapp,
+    process_payment, balance_workload,
+    load_providers, update_provider,
+)
+
+# ── Gemini client ──────────────────────────────────────────────────
+from google import genai
+
+gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+print("\n\nGEMINI API KEY: {} \n\n".format(os.getenv("GEMINI_API_KEY")))
+
+MODEL  = "gemini-2.5-flash"
+
+
+def generate_content_with_retry(model: str, contents: str, config=None, max_retries=5, initial_backoff=2.0):
+    """Resilient wrapper for Gemini API calls to gracefully handle 429 Rate Limits/Quota issues."""
+    import time
+    for attempt in range(max_retries):
+        try:
+            return gemini.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config
+            )
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "quota" in err_str.lower() or "resource_exhausted" in err_str.lower():
+                if "daily" in err_str.lower() or "perday" in err_str.lower():
+                    # Abort retries on daily limits immediately to allow instant fallback execution
+                    raise e
+                sleep_time = initial_backoff * (2 ** attempt)
+                print(f"\n[RETRY] Gemini API 429 Rate Limit hit. Retrying in {sleep_time:.2f}s... (Attempt {attempt+1}/{max_retries})\n")
+                time.sleep(sleep_time)
+            else:
+                raise e
+    return gemini.models.generate_content(model=model, contents=contents, config=config)
+
+
+
+# ── FastAPI app ────────────────────────────────────────────────────
+app = FastAPI(title="ServiceBazaar API", version="2.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── Pydantic models ───────────────────────────────────────────────
+class ServiceRequest(BaseModel):
+    message: str
+
+class DisputeRequest(BaseModel):
+    booking_id: str
+    provider_id: str
+    rating: int = 3
+    complaint: str = ""
+    severity: str = "low"
+
+# ── Trace logger ──────────────────────────────────────────────────
+def log_trace(agent: str, stage: str, values: str, rationale: str, output: str):
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    block = (
+        f"\n## [{ts}] [{agent}] [{stage}]\n"
+        f"**Confidence Score / Computational Values:**\n{values}\n\n"
+        f"**Step Rationale:**\n{rationale}\n\n"
+        f"**Core Execution Output:**\n{output}\n\n---\n"
+    )
+    with open(TRACES_PATH, "a", encoding="utf-8") as f:
+        f.write(block)
+    # Also write to root workspace_traces.md to support root directory mapping
+    root_traces_path = BASE_DIR / "workspace_traces.md"
+    with open(root_traces_path, "a", encoding="utf-8") as f:
+        f.write(block)
+
+# ══════════════════════════════════════════════════════════════════
+#  AGENT 1 — Multilingual Intent Parser
+# ══════════════════════════════════════════════════════════════════
+
+INTENT_PROMPT = """You are ServiceBazaar's multilingual intent extraction engine.
+The user message may mix English, Urdu, and Roman Urdu freely.
+
+Extract these tokens:
+1. service_type – e.g. "AC Repair", "Plumbing", "Electrical Repair", "Math Tutoring"
+2. location – Islamabad sector e.g. "G-13", "F-10", "Blue Area"
+3. urgency_level – "Low" | "Medium" | "High"
+4. preferred_time_window – e.g. "tomorrow morning", "ASAP"
+5. price_sensitivity – "Low" | "Medium" | "High"
+6. confidence_score – 0.0-1.0
+7. clarifying_questions – array of strings (populate if confidence < 0.70)
+
+User message: \"{raw}\"
+
+Return ONLY a JSON object with those 7 keys."""
+
+
+async def agent_1_parse(raw: str) -> Dict:
+    """Use Gemini to extract structured intent from mixed-language input."""
+    try:
+        resp = generate_content_with_retry(
+            model=MODEL,
+            contents=INTENT_PROMPT.replace("{raw}", raw),
+            config=genai.types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.1,
+            ),
+        )
+        result = json.loads(resp.text)
+    except Exception as exc:
+        result = _fallback_parse(raw)
+        result["_fallback"] = str(exc)
+
+    log_trace(
+        "AGENT_1", "INTENT_PARSE",
+        f"confidence_score: {result.get('confidence_score')}",
+        f"Parsed input via {'Gemini' if '_fallback' not in result else 'keyword fallback'}.",
+        json.dumps(result, ensure_ascii=False),
+    )
+    return result
+
+
+def _fallback_parse(text: str) -> Dict:
+    t = text.lower()
+    svc = "General Service"
+    for kw, sv in [("ac","AC Repair"),("plumb","Plumbing"),("pipe","Plumbing"),
+                   ("electric","Electrical Repair"),("bijli","Electrical Repair"),
+                   ("tutor","General Tutoring"),("teacher","General Tutoring"),
+                   ("wiring","Electrical Wiring"),("drain","Drain Cleaning")]:
+        if kw in t:
+            svc = sv; break
+    loc = "Islamabad"
+    for lk in ["g-13","g-11","g-9","f-10","f-8","f-7","f-6","blue area",
+               "i-8","i-10","h-8","e-11","bahria","dha"]:
+        if lk in t:
+            loc = lk.upper(); break
+    urg = "High" if any(w in t for w in ["urgent","jaldi","asap","abhi","foran"]) else "Medium"
+    ps  = "High" if any(w in t for w in ["budget","sasta","cheap","kam","zyada nahi"]) else "Medium"
+    return {
+        "service_type": svc, "location": loc, "urgency_level": urg,
+        "preferred_time_window": "flexible", "price_sensitivity": ps,
+        "confidence_score": 0.55,
+        "clarifying_questions": ["Could you specify the exact service?",
+                                 "What time works best for you?"],
+    }
+
+
+# ══════════════════════════════════════════════════════════════════
+#  AGENT 2 — 6-Factor Matcher with Scheduling Guard-rails
+# ══════════════════════════════════════════════════════════════════
+
+W = {"rating": 0.25, "reliability": 0.25, "distance": 0.15,
+     "risk": 0.15, "workload": 0.10, "recency": 0.10}
+
+
+def _time_overlaps(existing_blocks: List[str], requested: str) -> bool:
+    """Check if *requested* 'HH:MM-HH:MM' overlaps any existing block."""
+    if not requested or not existing_blocks:
+        return False
+    try:
+        rs, re_ = requested.split("-")
+        r_start = int(rs.replace(":", ""))
+        r_end   = int(re_.replace(":", ""))
+    except Exception:
+        return False
+    for blk in existing_blocks:
+        try:
+            bs, be_ = blk.split("-")
+            b_start = int(bs.replace(":", ""))
+            b_end   = int(be_.replace(":", ""))
+            if r_start < b_end + 30 and r_end > b_start - 30:  # 30-min buffer
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _suggest_alt_slots(existing_blocks: List[str]) -> List[str]:
+    """Auto-generate 2 alternative time slots avoiding collisions."""
+    all_hours = set()
+    for blk in existing_blocks:
+        try:
+            s, e = blk.split("-")
+            sh = int(s.split(":")[0])
+            eh = int(e.split(":")[0])
+            for h in range(sh, eh + 1):
+                all_hours.add(h)
+        except Exception:
+            pass
+    alts = []
+    for h in range(8, 18):
+        if h not in all_hours and (h + 1) not in all_hours:
+            alts.append(f"{h:02d}:00-{h+1:02d}:30")
+            if len(alts) >= 2:
+                break
+    return alts or ["09:00-10:30", "15:00-16:30"]
+
+
+async def agent_2_match(intent: Dict) -> Dict:
+    providers = load_providers()
+    svc = intent.get("service_type", "").lower()
+
+    # ── skill filter ──
+    matched = []
+    for p in providers:
+        skills_lower = [s.lower() for s in p.get("skills", [])]
+        if any(svc in sk or sk in svc for sk in skills_lower):
+            matched.append(p)
+    if not matched:
+        for p in providers:
+            joined = " ".join(p.get("skills", [])).lower()
+            if any(w in joined for w in svc.split()):
+                matched.append(p)
+    if not matched:
+        return {"status": "no_match", "message": "No providers found.", "alternatives": []}
+
+    # ── distances ──
+    coords = resolve_location(intent.get("location", ""))
+    travel = calculate_travel_matrix(matched, coords[0], coords[1])
+    dist_map = {t["provider_id"]: t for t in travel}
+
+    # ── workload fairness sort ──
+    matched = balance_workload(matched)
+
+    # ── scoring ──
+    scored = []
+    for p in matched:
+        d = dist_map.get(p["id"], {"distance_km": 10, "travel_time_min": 24})
+        rating_n     = p.get("rating", 3) / 5.0
+        reliab_n     = p.get("reliability_score", 0.5)
+        dist_n       = min(d["distance_km"] / 20.0, 1.0)
+        risk_n       = p.get("risk_score", 0.5)
+        work_n       = p.get("_fairness_index", 0.5)
+        recency_n    = max(0, 1.0 - p.get("review_recency_days", 30) / 90.0)
+
+        score = (W["rating"]     * rating_n
+               + W["reliability"] * reliab_n
+               - W["distance"]    * dist_n
+               - W["risk"]        * risk_n
+               - W["workload"]    * work_n
+               + W["recency"]     * recency_n)
+
+        # ── calendar clash check ──
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_blocks = []
+        for entry in p.get("calendar_schedule", []):
+            if entry.get("date") == today_str:
+                today_blocks = entry.get("blocks", [])
+        has_clash = False
+        alt_slots = []
+        time_window = intent.get("preferred_time_window", "")
+        time_match = re.search(r"(\d{1,2}:\d{2})-(\d{1,2}:\d{2})", time_window)
+        if time_match:
+            requested_slot = time_match.group(0)
+            if _time_overlaps(today_blocks, requested_slot):
+                has_clash = True
+                alt_slots = _suggest_alt_slots(today_blocks)
+
+        scored.append({
+            "provider": p,
+            "score": round(score, 4),
+            "distance_km": d["distance_km"],
+            "travel_time_min": d["travel_time_min"],
+            "has_clash": has_clash,
+            "alt_slots": alt_slots,
+            "breakdown": {
+                "rating": round(rating_n, 3),
+                "reliability": round(reliab_n, 3),
+                "distance": round(dist_n, 3),
+                "risk": round(risk_n, 3),
+                "workload": round(work_n, 3),
+                "recency": round(recency_n, 3),
+            },
+        })
+
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    top = scored[0]
+    runner_up = scored[1] if len(scored) > 1 else None
+
+    result = {
+        "status": "matched",
+        "selected": {
+            "id": top["provider"]["id"],
+            "name": top["provider"]["name"],
+            "score": top["score"],
+            "distance_km": top["distance_km"],
+            "travel_time_min": top["travel_time_min"],
+            "has_clash": top["has_clash"],
+            "alt_slots": top["alt_slots"],
+            "breakdown": top["breakdown"],
+        },
+        "runner_up": {
+            "id": runner_up["provider"]["id"],
+            "name": runner_up["provider"]["name"],
+            "score": runner_up["score"],
+        } if runner_up else None,
+        "total_evaluated": len(scored),
+    }
+
+    log_trace(
+        "AGENT_2", "MATCHING_RATIONALE",
+        f"Top score: {top['score']}  |  Evaluated: {len(scored)} providers",
+        f"6-factor weighted scoring applied. Weights: {W}",
+        json.dumps(result, ensure_ascii=False, indent=2),
+    )
+    return result
+
+
+def rollback_to_runner_up(match_result: Dict) -> Dict:
+    """If the primary provider cancels, auto-assign runner-up."""
+    ru = match_result.get("runner_up")
+    if not ru:
+        return {"status": "rollback_failed", "message": "No runner-up available."}
+    log_trace(
+        "AGENT_2", "ROLLBACK",
+        f"Runner-up ID: {ru['id']}  score: {ru['score']}",
+        "Primary provider cancelled. Executing automatic rollback subroutine.",
+        json.dumps(ru, ensure_ascii=False),
+    )
+    return {"status": "rollback_ok", "new_provider": ru}
+
+
+# ══════════════════════════════════════════════════════════════════
+#  AGENT 3 — Dynamic Complex Pricing Engine
+# ══════════════════════════════════════════════════════════════════
+
+COMPLEXITY_MULT = {"Basic": 1.0, "Intermediate": 1.35, "Complex": 1.75}
+SURGE_MAP       = {"Low": 0, "Medium": 150, "High": 400}
+DIST_RATE       = 25  # PKR per km beyond 5 km
+LOYALTY_DISC    = 0.05  # 5 %
+
+
+async def agent_3_price(intent: Dict, provider: Dict, distance_km: float) -> Dict:
+    """Compute an itemized price breakdown."""
+    # ── classify complexity via Gemini ──
+    complexity = "Basic"
+    try:
+        cprompt = (
+            f"Classify this service request into exactly one tier: Basic, Intermediate, or Complex.\n"
+            f"Service: {intent.get('service_type')}\n"
+            f"Details: {intent.get('preferred_time_window', '')}\n"
+            f"Return JSON: {{\"tier\": \"...\"}}"
+        )
+        cr = generate_content_with_retry(
+            model=MODEL, contents=cprompt,
+            config=genai.types.GenerateContentConfig(
+                response_mime_type="application/json", temperature=0.0,
+            ),
+        )
+        complexity = json.loads(cr.text).get("tier", "Basic")
+    except Exception:
+        complexity = "Intermediate"
+
+    base       = provider.get("base_rate", 1000)
+    mult       = COMPLEXITY_MULT.get(complexity, 1.0)
+    surge      = SURGE_MAP.get(intent.get("urgency_level", "Medium"), 150)
+    dist_sur   = max(0, (distance_km - 5)) * DIST_RATE
+    subtotal   = base * mult + surge + dist_sur
+    loyalty    = round(subtotal * LOYALTY_DISC)
+    final      = round(subtotal - loyalty)
+
+    breakdown_md = (
+        f"| Item | Amount (PKR) |\n|---|---|\n"
+        f"| Base Rate ({provider.get('name')}) | {base} |\n"
+        f"| Complexity ({complexity} ×{mult}) | {round(base*mult - base)} |\n"
+        f"| Surge ({intent.get('urgency_level')}) | {surge} |\n"
+        f"| Distance Surcharge ({round(distance_km,1)} km) | {round(dist_sur)} |\n"
+        f"| Loyalty Discount | -{loyalty} |\n"
+        f"| **Final Price** | **{final}** |"
+    )
+
+    result = {
+        "base_rate": base,
+        "complexity_tier": complexity,
+        "complexity_multiplier": mult,
+        "surge_fee": surge,
+        "distance_surcharge": round(dist_sur),
+        "loyalty_discount": loyalty,
+        "final_price": final,
+        "breakdown_md": breakdown_md,
+    }
+
+    log_trace(
+        "AGENT_3", "PRICING_BREAKDOWN",
+        f"Final = ({base} × {mult}) + {surge} + {round(dist_sur)} − {loyalty} = {final}",
+        f"Complexity classified as {complexity}. Surge for {intent.get('urgency_level')} urgency.",
+        breakdown_md,
+    )
+    return result
+
+
+# ══════════════════════════════════════════════════════════════════
+#  AGENT 4 — Lifecycle & Dispute Simulator
+# ══════════════════════════════════════════════════════════════════
+
+async def agent_4_dispute(data: DisputeRequest) -> Dict:
+    pid = data.provider_id
+    prov = None
+    for p in load_providers():
+        if p["id"] == pid:
+            prov = p; break
+    if not prov:
+        raise HTTPException(404, f"Provider {pid} not found")
+
+    old_rel  = prov.get("reliability_score", 0.5)
+    old_risk = prov.get("risk_score", 0.5)
+    action   = "none"
+
+    if data.severity == "extreme" or data.rating == 1:
+        new_rel  = max(0, old_rel - 0.20)
+        new_risk = min(1, old_risk + 0.25)
+        action   = "TEMPORARY_BLACKLIST"
+    elif data.severity == "high" or data.rating <= 2:
+        new_rel  = max(0, old_rel - 0.10)
+        new_risk = min(1, old_risk + 0.15)
+        action   = "FLAGGED"
+    elif data.severity == "medium" or data.rating <= 3:
+        new_rel  = max(0, old_rel - 0.05)
+        new_risk = min(1, old_risk + 0.05)
+        action   = "WARNING"
+    else:
+        new_rel  = min(1, old_rel + 0.01)
+        new_risk = max(0, old_risk - 0.01)
+        action   = "POSITIVE_FEEDBACK"
+
+    update_provider(pid, {
+        "reliability_score": round(new_rel, 3),
+        "risk_score": round(new_risk, 3),
+    })
+
+    # ── Gemini-powered empathetic response ──
+    ai_reply = ""
+    try:
+        dp = (
+            f"A customer filed a complaint about provider '{prov['name']}': "
+            f"\"{data.complaint}\". Severity: {data.severity}, Rating: {data.rating}/5. "
+            f"Action taken: {action}. Write a brief, empathetic acknowledgement (2-3 sentences)."
+        )
+        dr = generate_content_with_retry(model=MODEL, contents=dp)
+        ai_reply = dr.text.strip()
+    except Exception:
+        ai_reply = "We've received your feedback and taken appropriate action. Thank you."
+
+    result = {
+        "provider_id": pid,
+        "provider_name": prov["name"],
+        "action": action,
+        "reliability_score": {"old": old_rel, "new": round(new_rel, 3)},
+        "risk_score": {"old": old_risk, "new": round(new_risk, 3)},
+        "ai_response": ai_reply,
+    }
+
+    log_trace(
+        "AGENT_4", "DISPUTE_RESOLUTION",
+        f"Rating: {data.rating}/5  Severity: {data.severity}  Action: {action}",
+        f"Reliability {old_rel} → {round(new_rel,3)}, Risk {old_risk} → {round(new_risk,3)}",
+        json.dumps(result, ensure_ascii=False, indent=2),
+    )
+    return result
+
+
+# ══════════════════════════════════════════════════════════════════
+#  ANTIGRAVITY ORCHESTRATOR — Gemini-driven Agentic Swarm Loop
+# ══════════════════════════════════════════════════════════════════
+
+ORCHESTRATOR_PROMPT = """You are the ServiceBazaar Antigravity Swarm Orchestrator.
+Your job is to drive an informal-economy service request through its full lifecycle
+by reading the live system state and choosing the next action.
+
+Current System State:
+{state}
+
+Action History (steps already completed this cycle):
+{history}
+
+Available Swarm Actions:
+1. "RUN_INTENT_PARSER"    — Parse the raw user input into structured fields.
+                             Use this FIRST if parsed_intent is null.
+2. "TRIGGER_MATCHER"      — Match providers. Use this once parsed_intent exists
+                             and matching_data is null.
+3. "CALCULATE_PRICING"    — Compute itemised price. Use this once matching_data
+                             is populated with a selected provider.
+4. "PROCESS_BOOKING"      — Execute payment and write ledger entry. Use this once
+                             pricing_data is ready and booking_status is still pending.
+5. "TRIGGER_ROLLBACK"     — Auto-assign the runner-up provider. Use this ONLY when
+                             payment_result shows a FAILED status.
+6. "RAISE_CLARIFICATION"  — Halt and ask the user a clarifying question. Use this
+                             when confidence_score < 0.70 or critical fields are missing.
+7. "COMPLETE_CYCLE"       — Finalise and exit. Use this ONLY when booking_status is
+                             'confirmed' or 'rollback_assigned', never prematurely.
+
+Decision Rules:
+- Read the state carefully before choosing. Do NOT repeat an action already in history
+  unless the state changed in a way that justifies it (e.g. rollback after failed payment).
+- If matching_data has status 'no_match', go to RAISE_CLARIFICATION.
+- If booking_status is 'payment_failed', go to TRIGGER_ROLLBACK.
+- If booking_status is 'rollback_assigned', go to COMPLETE_CYCLE.
+
+You MUST return a JSON object with exactly these three keys:
+{{
+    "reasoning_trace": "Detailed paragraph explaining why you chose this action based on the current state values...",
+    "next_action": "<ONE_OF_THE_7_ACTIONS>",
+    "updated_context_notes": "Any insight you want passed to the next stage"
+}}"""
+
+
+MAX_SWARM_ITERATIONS = 10  # safety guard — prevents infinite orchestration loops
+
+
+async def execute_payment_and_ledger(state: dict) -> dict:
+    """Extracted payment + ledger tool callable by the orchestrator."""
+    intent   = state["parsed_intent"]
+    match    = state["matching_data"]
+    pricing  = state["pricing_data"]
+    sel      = match["selected"]
+    raw_text = state["raw_input"]
+
+    booking_id = f"BK-{uuid.uuid4().hex[:8].upper()}"
+    payment    = process_payment(booking_id, pricing["final_price"])
+
+    booking_row = {
+        "booking_id":    booking_id,
+        "timestamp":     datetime.now().isoformat(),
+        "customer_query": raw_text,
+        "service_type":  intent.get("service_type"),
+        "provider_id":   sel["id"],
+        "provider_name": sel["name"],
+        "quoted_price":  pricing["final_price"],
+        "status":        "confirmed" if payment["status"] == "SUCCESS" else "payment_hold",
+        "payment_status": payment["status"],
+        "location":      intent.get("location"),
+        "urgency":       intent.get("urgency_level"),
+    }
+    append_booking(booking_row)
+    send_sms(
+        sel["name"],
+        f"New job #{booking_id}: {intent.get('service_type')} at {intent.get('location')}"
+    )
+    send_whatsapp(
+        "Customer",
+        f"Your booking #{booking_id} is confirmed! {sel['name']} is on the way."
+    )
+
+    log_trace(
+        "AGENT_PAYMENT", "LEDGER_WRITE",
+        f"Payment status: {payment['status']}  |  Booking ID: {booking_id}",
+        "Payment processed and booking row appended to ledger.",
+        json.dumps(booking_row, ensure_ascii=False, indent=2),
+    )
+    return {"payment": payment, "booking": booking_row, "booking_id": booking_id}
+
+
+def _fallback_orchestrate(state: dict) -> dict:
+    """Deterministic, rule-based backup swarm orchestrator when API keys hit daily limits."""
+    history = state.get("history", [])
+
+    # First priority: parse intent
+    if state.get("parsed_intent") is None:
+        return {
+            "reasoning_trace": "Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.",
+            "next_action": "RUN_INTENT_PARSER",
+            "updated_context_notes": "Executing backup parsing subroutine due to depleted Gemini daily quota."
+        }
+
+    # Check for low confidence / clarification
+    parsed = state.get("parsed_intent") or {}
+    if parsed.get("confidence_score", 1.0) < 0.70 and "RAISE_CLARIFICATION" not in history:
+        return {
+            "reasoning_trace": "Parsed intent confidence score is below 0.70. Raising clarifying questions to resolve user intent.",
+            "next_action": "RAISE_CLARIFICATION",
+            "updated_context_notes": "Clarification loop triggered by low confidence fallback."
+        }
+
+    # Second priority: Match provider
+    if state.get("matching_data") is None:
+        return {
+            "reasoning_trace": "Provider matching has not run yet. Invoking TRIGGER_MATCHER to search the provider directory.",
+            "next_action": "TRIGGER_MATCHER",
+            "updated_context_notes": "Executing matching filters."
+        }
+
+    # If no match found
+    match = state.get("matching_data") or {}
+    if match.get("status") != "matched" and "RAISE_CLARIFICATION" not in history:
+        return {
+            "reasoning_trace": "No matching providers found in the system. Halting to request details.",
+            "next_action": "RAISE_CLARIFICATION",
+            "updated_context_notes": "No providers available fallback."
+        }
+
+    # Third priority: Pricing calculation
+    if state.get("pricing_data") is None:
+        return {
+            "reasoning_trace": "Selected provider matched but price not calculated. Invoking CALCULATE_PRICING to generate itemized invoice.",
+            "next_action": "CALCULATE_PRICING",
+            "updated_context_notes": "Pricing engine dispatch."
+        }
+
+    # Fourth priority: Payment & Booking
+    if state.get("booking_status") == "pending":
+        return {
+            "reasoning_trace": "Pricing is finalized. Proceeding to PROCESS_BOOKING to run transaction and save to append-only ledger.",
+            "next_action": "PROCESS_BOOKING",
+            "updated_context_notes": "Payment gateway processing."
+        }
+
+    # Rollback handling
+    if state.get("booking_status") == "payment_failed":
+        return {
+            "reasoning_trace": "Primary payment transaction failed. Automatically routing to TRIGGER_ROLLBACK for runner-up assignment.",
+            "next_action": "TRIGGER_ROLLBACK",
+            "updated_context_notes": "Executing safety protocol rollback."
+        }
+
+    # Final step
+    return {
+        "reasoning_trace": "All pipeline processes completed successfully. Completing lifecycle.",
+        "next_action": "COMPLETE_CYCLE",
+        "updated_context_notes": "Full cycle complete."
+    }
+
+
+async def run_agentic_swarm(raw_text: str):
+    """
+    Gemini-orchestrated agentic loop.
+    The LLM reads the full state on every iteration and decides the next tool to call.
+    Python is a pure tool executor — Gemini is the brain.
+    """
+    # ── initialise state & signal processing ──
+    _write_json(REQUEST_PATH, {"message": raw_text, "status": "pending",
+                                "timestamp": datetime.now().isoformat()})
+    _write_json(RESPONSE_PATH, {"status": "processing", "data": None,
+                                 "timestamp": datetime.now().isoformat()})
+
+    state: dict = {
+        "raw_input":      raw_text,
+        "parsed_intent":  None,
+        "matching_data":  None,
+        "pricing_data":   None,
+        "booking_status": "pending",
+        "payment_result": None,
+        "final_booking":  None,
+        "history":        [],
+        "error_log":      [],
+    }
+
+    cycle_active = True
+    iterations   = 0
+
+    while cycle_active and iterations < MAX_SWARM_ITERATIONS:
+        iterations += 1
+        
+        # ── Pace loop iterations to prevent rate limits and simulate human cognitive pacing ──
+        await asyncio.sleep(2.0)
+
+        # ── 1. Ask the Orchestrator what to do next ──────────────────
+        prompt = ORCHESTRATOR_PROMPT.format(
+            state=json.dumps(
+                {k: v for k, v in state.items() if k != "history"},
+                indent=2, ensure_ascii=False, default=str
+            ),
+            history=json.dumps(state["history"], ensure_ascii=False),
+        )
+        try:
+            resp = generate_content_with_retry(
+                model=MODEL,
+                contents=prompt,
+                config=genai.types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.1,
+                ),
+            )
+            decision = json.loads(resp.text)
+        except Exception as exc:
+            err_str = str(exc)
+            if "429" in err_str or "quota" in err_str.lower() or "resource_exhausted" in err_str.lower():
+                print("\n[FALLBACK] Swarm Orchestrator falling back to rule-based state machine due to depleted Gemini daily quota.\n")
+                decision = _fallback_orchestrate(state)
+            else:
+                state["error_log"].append(f"Orchestrator parse error: {exc}")
+                break
+
+        action  = decision.get("next_action", "COMPLETE_CYCLE")
+        trace   = decision.get("reasoning_trace", "(no trace)")
+        context = decision.get("updated_context_notes", "")
+
+        # ── 2. Log the orchestrator's reasoning ─────────────────────
+        log_trace(
+            "ANTIGRAVITY_ORCHESTRATOR",
+            f"STEP_{iterations} → {action}",
+            f"Iteration: {iterations}/{MAX_SWARM_ITERATIONS}  |  History: {state['history']}",
+            trace,
+            f"Context notes: {context}",
+        )
+
+        state["history"].append(action)
+
+        # ── 3. Execute the chosen action ─────────────────────────────
+        try:
+            if action == "RUN_INTENT_PARSER":
+                state["parsed_intent"] = await agent_1_parse(state["raw_input"])
+
+            elif action == "TRIGGER_MATCHER":
+                state["matching_data"] = await agent_2_match(state["parsed_intent"])
+
+            elif action == "CALCULATE_PRICING":
+                sel = state["matching_data"]["selected"]
+                # Resolve full provider record for base_rate
+                provider = next(
+                    (p for p in load_providers() if p["id"] == sel["id"]),
+                    {"id": sel["id"], "name": sel["name"], "base_rate": 1000}
+                )
+                state["pricing_data"] = await agent_3_price(
+                    state["parsed_intent"], provider, sel["distance_km"]
+                )
+
+            elif action == "PROCESS_BOOKING":
+                result = await execute_payment_and_ledger(state)
+                state["payment_result"]  = result["payment"]
+                state["final_booking"]   = result["booking"]
+                if result["payment"]["status"] == "SUCCESS":
+                    state["booking_status"] = "confirmed"
+                else:
+                    # Signal failure — the LLM will catch this and route to TRIGGER_ROLLBACK
+                    state["booking_status"] = "payment_failed"
+
+            elif action == "TRIGGER_ROLLBACK":
+                rb = rollback_to_runner_up(state["matching_data"])
+                state["final_booking"]["_rollback"] = rb
+                state["booking_status"] = "rollback_assigned"
+
+            elif action == "RAISE_CLARIFICATION":
+                state["booking_status"] = "clarification_needed"
+                intent = state["parsed_intent"] or {}
+                _write_json(RESPONSE_PATH, {
+                    "status": "clarification_needed",
+                    "data": {
+                        "intent":    intent,
+                        "questions": intent.get("clarifying_questions", []),
+                        "orchestrator_note": context,
+                    },
+                    "timestamp": datetime.now().isoformat(),
+                })
+                cycle_active = False
+
+            elif action == "COMPLETE_CYCLE":
+                cycle_active = False
+
+            else:
+                state["error_log"].append(f"Unknown action: {action}")
+                cycle_active = False
+
+        except Exception as exc:
+            state["error_log"].append(f"{action} raised: {exc}")
+            cycle_active = False
+
+    # ── 4. Persist final response ────────────────────────────────────
+    if state["booking_status"] in ("confirmed", "rollback_assigned"):
+        _write_json(RESPONSE_PATH, {
+            "status":    "processed",
+            "data": {
+                "booking_id":  state["final_booking"]["booking_id"],
+                "intent":      state["parsed_intent"],
+                "match":       state["matching_data"],
+                "pricing":     state["pricing_data"],
+                "payment":     state["payment_result"],
+                "booking":     state["final_booking"],
+                "swarm_steps": state["history"],
+            },
+            "timestamp": datetime.now().isoformat(),
+        })
+    elif state["booking_status"] not in ("clarification_needed",):
+        # Catch-all for loops that exited without writing
+        _write_json(RESPONSE_PATH, {
+            "status":    "error",
+            "data":      {"error_log": state["error_log"], "swarm_steps": state["history"]},
+            "timestamp": datetime.now().isoformat(),
+        })
+
+    _write_json(REQUEST_PATH, {"message": raw_text, "status": state["booking_status"],
+                                "timestamp": datetime.now().isoformat()})
+
+
+def _write_json(path: Path, obj: dict):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2, ensure_ascii=False)
+
+
+# ══════════════════════════════════════════════════════════════════
+#  ENDPOINTS
+# ══════════════════════════════════════════════════════════════════
+
+@app.post("/api/request")
+async def create_request(req: ServiceRequest, bg: BackgroundTasks):
+    """Accept raw conversational text and hand control to the Antigravity Orchestrator."""
+    if not req.message.strip():
+        raise HTTPException(400, "Message cannot be empty.")
+    bg.add_task(run_agentic_swarm, req.message)
+    return {"status": "accepted", "message": "Antigravity Swarm Orchestrator initialised."}
+
+
+@app.get("/api/poll")
+async def poll_response():
+    """Frontend polls this endpoint for state changes."""
+    if not RESPONSE_PATH.exists():
+        return {"status": "idle", "data": None}
+    with open(RESPONSE_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+@app.post("/api/dispute")
+async def file_dispute(dispute: DisputeRequest):
+    """Accept a structured dispute / feedback payload."""
+    result = await agent_4_dispute(dispute)
+    return {"status": "resolved", "data": result}
+
+
+@app.get("/api/providers")
+async def list_providers():
+    """Utility endpoint — return all providers."""
+    return load_providers()
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "timestamp": datetime.now().isoformat()}
+
+
+# ══════════════════════════════════════════════════════════════════
+#  ENTRY POINT
+# ══════════════════════════════════════════════════════════════════
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

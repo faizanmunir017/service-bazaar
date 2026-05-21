@@ -1,0 +1,76 @@
+{
+  "status": "processed",
+  "data": {
+    "booking_id": "BK-9C3A0FCA",
+    "intent": {
+      "service_type": "Generator Service",
+      "location": "G-7",
+      "urgency_level": "Medium",
+      "preferred_time_window": "tomorrow",
+      "price_sensitivity": "Medium",
+      "confidence_score": 0.85,
+      "clarifying_questions": []
+    },
+    "match": {
+      "status": "matched",
+      "selected": {
+        "id": "PROV_ELC_03",
+        "name": "Usman Ghani",
+        "score": 0.4284,
+        "distance_km": 2.95,
+        "travel_time_min": 7.1,
+        "has_clash": false,
+        "alt_slots": [],
+        "breakdown": {
+          "rating": 0.92,
+          "reliability": 0.93,
+          "distance": 0.148,
+          "risk": 0.05,
+          "workload": 1.0,
+          "recency": 0.956
+        }
+      },
+      "runner_up": null,
+      "total_evaluated": 1
+    },
+    "pricing": {
+      "base_rate": 1600,
+      "complexity_tier": "Intermediate",
+      "complexity_multiplier": 1.35,
+      "surge_fee": 150,
+      "distance_surcharge": 0,
+      "loyalty_discount": 116,
+      "final_price": 2194,
+      "breakdown_md": "| Item | Amount (PKR) |\n|---|---|\n| Base Rate (Usman Ghani) | 1600 |\n| Complexity (Intermediate ×1.35) | 560 |\n| Surge (Medium) | 150 |\n| Distance Surcharge (3.0 km) | 0 |\n| Loyalty Discount | -116 |\n| **Final Price** | **2194** |"
+    },
+    "payment": {
+      "booking_id": "BK-9C3A0FCA",
+      "amount": 2194,
+      "method": "COD",
+      "status": "SUCCESS",
+      "transaction_id": "TXN_BK-9C3A0FCA_1779322110",
+      "message": "Payment processed successfully."
+    },
+    "booking": {
+      "booking_id": "BK-9C3A0FCA",
+      "timestamp": "2026-05-21T05:08:30.284273",
+      "customer_query": "Mujhe generator wala chahiye in g7 kal",
+      "service_type": "Generator Service",
+      "provider_id": "PROV_ELC_03",
+      "provider_name": "Usman Ghani",
+      "quoted_price": 2194,
+      "status": "confirmed",
+      "payment_status": "SUCCESS",
+      "location": "G-7",
+      "urgency": "Medium"
+    },
+    "swarm_steps": [
+      "RUN_INTENT_PARSER",
+      "TRIGGER_MATCHER",
+      "CALCULATE_PRICING",
+      "PROCESS_BOOKING",
+      "COMPLETE_CYCLE"
+    ]
+  },
+  "timestamp": "2026-05-21T05:08:32.294040"
+}

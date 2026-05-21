@@ -1,0 +1,422 @@
+[
+  {
+    "id": "PROV_AC_01",
+    "name": "Asif Khan",
+    "skills": [
+      "AC Repair",
+      "AC Installation",
+      "AC Gas Refill"
+    ],
+    "experience_level": "Senior",
+    "base_rate": 1500,
+    "rating": 4.9,
+    "review_recency_days": 1,
+    "reliability_score": 0.98,
+    "risk_score": 0.02,
+    "cancellation_rate": 0.01,
+    "current_coordinates": {
+      "lat": 33.6321,
+      "lng": 73.0148
+    },
+    "workload_hours_assigned": 32,
+    "historical_earnings": 145000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": [
+          "09:00-10:30",
+          "14:00-15:30"
+        ]
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": [
+          "10:00-11:30"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "PROV_AC_02",
+    "name": "Zahid Mehmood",
+    "skills": [
+      "AC Repair",
+      "AC Installation"
+    ],
+    "experience_level": "Mid",
+    "base_rate": 1100,
+    "rating": 4.2,
+    "review_recency_days": 5,
+    "reliability_score": 0.82,
+    "risk_score": 0.12,
+    "cancellation_rate": 0.08,
+    "current_coordinates": {
+      "lat": 33.6968,
+      "lng": 73.0111
+    },
+    "workload_hours_assigned": 18,
+    "historical_earnings": 62000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": [
+          "11:00-13:00"
+        ]
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": []
+      }
+    ]
+  },
+  {
+    "id": "PROV_AC_03",
+    "name": "Tariq Hussain",
+    "skills": [
+      "AC Repair",
+      "Refrigerator Repair",
+      "AC Gas Refill"
+    ],
+    "experience_level": "Junior",
+    "base_rate": 900,
+    "rating": 3.8,
+    "review_recency_days": 12,
+    "reliability_score": 0.75,
+    "risk_score": 0.18,
+    "cancellation_rate": 0.12,
+    "current_coordinates": {
+      "lat": 33.7294,
+      "lng": 73.0931
+    },
+    "workload_hours_assigned": 10,
+    "historical_earnings": 28000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": []
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": [
+          "08:00-10:00"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "PROV_PLB_01",
+    "name": "Hamza Ali",
+    "skills": [
+      "Plumbing",
+      "Pipe Fitting",
+      "Drain Cleaning"
+    ],
+    "experience_level": "Senior",
+    "base_rate": 1200,
+    "rating": 4.7,
+    "review_recency_days": 2,
+    "reliability_score": 0.95,
+    "risk_score": 0.04,
+    "cancellation_rate": 0.03,
+    "current_coordinates": {
+      "lat": 33.6616,
+      "lng": 73.0231
+    },
+    "workload_hours_assigned": 28,
+    "historical_earnings": 118000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": [
+          "08:00-09:30",
+          "13:00-14:30"
+        ]
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": [
+          "09:00-11:00"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "PROV_PLB_02",
+    "name": "Nadeem Iqbal",
+    "skills": [
+      "Plumbing",
+      "Water Tank Repair",
+      "Pipe Fitting"
+    ],
+    "experience_level": "Mid",
+    "base_rate": 1000,
+    "rating": 4.3,
+    "review_recency_days": 7,
+    "reliability_score": 0.85,
+    "risk_score": 0.1,
+    "cancellation_rate": 0.06,
+    "current_coordinates": {
+      "lat": 33.6689,
+      "lng": 73.0484
+    },
+    "workload_hours_assigned": 22,
+    "historical_earnings": 78000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": [
+          "10:00-12:00"
+        ]
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": []
+      }
+    ]
+  },
+  {
+    "id": "PROV_PLB_03",
+    "name": "Waqas Shah",
+    "skills": [
+      "Drain Cleaning",
+      "Plumbing",
+      "Sewerage Repair"
+    ],
+    "experience_level": "Junior",
+    "base_rate": 800,
+    "rating": 3.9,
+    "review_recency_days": 15,
+    "reliability_score": 0.72,
+    "risk_score": 0.2,
+    "cancellation_rate": 0.14,
+    "current_coordinates": {
+      "lat": 33.5206,
+      "lng": 73.0989
+    },
+    "workload_hours_assigned": 8,
+    "historical_earnings": 22000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": []
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": []
+      }
+    ]
+  },
+  {
+    "id": "PROV_ELC_01",
+    "name": "Faisal Raza",
+    "skills": [
+      "Electrical Wiring",
+      "Electrical Repair",
+      "Light Installation"
+    ],
+    "experience_level": "Senior",
+    "base_rate": 1400,
+    "rating": 4.8,
+    "review_recency_days": 3,
+    "reliability_score": 0.96,
+    "risk_score": 0.03,
+    "cancellation_rate": 0.02,
+    "current_coordinates": {
+      "lat": 33.7246,
+      "lng": 73.0714
+    },
+    "workload_hours_assigned": 30,
+    "historical_earnings": 132000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": [
+          "09:00-11:00",
+          "15:00-17:00"
+        ]
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": [
+          "10:00-12:00"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "PROV_ELC_02",
+    "name": "Bilal Ahmed",
+    "skills": [
+      "Electrical Repair",
+      "Fan Installation",
+      "Light Installation"
+    ],
+    "experience_level": "Mid",
+    "base_rate": 1050,
+    "rating": 4.1,
+    "review_recency_days": 10,
+    "reliability_score": 0.8,
+    "risk_score": 0.14,
+    "cancellation_rate": 0.09,
+    "current_coordinates": {
+      "lat": 33.6844,
+      "lng": 73.0401
+    },
+    "workload_hours_assigned": 15,
+    "historical_earnings": 55000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": []
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": [
+          "14:00-16:00"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "PROV_ELC_03",
+    "name": "Usman Ghani",
+    "skills": [
+      "Electrical Wiring",
+      "Generator Repair",
+      "UPS Installation"
+    ],
+    "experience_level": "Senior",
+    "base_rate": 1600,
+    "rating": 4.6,
+    "review_recency_days": 4,
+    "reliability_score": 0.93,
+    "risk_score": 0.05,
+    "cancellation_rate": 0.03,
+    "current_coordinates": {
+      "lat": 33.7104,
+      "lng": 73.0413
+    },
+    "workload_hours_assigned": 26,
+    "historical_earnings": 110000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": [
+          "08:00-10:00"
+        ]
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": [
+          "09:00-11:00",
+          "13:00-15:00"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "PROV_TUT_01",
+    "name": "Dr. Ayesha Siddiqui",
+    "skills": [
+      "Math Tutoring",
+      "Science Tutoring",
+      "Physics Tutoring"
+    ],
+    "experience_level": "Senior",
+    "base_rate": 2000,
+    "rating": 4.95,
+    "review_recency_days": 1,
+    "reliability_score": 0.99,
+    "risk_score": 0.01,
+    "cancellation_rate": 0.01,
+    "current_coordinates": {
+      "lat": 33.7194,
+      "lng": 73.0589
+    },
+    "workload_hours_assigned": 20,
+    "historical_earnings": 160000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": [
+          "16:00-18:00"
+        ]
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": [
+          "15:00-17:00",
+          "18:00-19:30"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "PROV_TUT_02",
+    "name": "Saad Malik",
+    "skills": [
+      "English Tutoring",
+      "General Tutoring",
+      "IELTS Prep"
+    ],
+    "experience_level": "Mid",
+    "base_rate": 1500,
+    "rating": 4.4,
+    "review_recency_days": 6,
+    "reliability_score": 0.88,
+    "risk_score": 0.08,
+    "cancellation_rate": 0.05,
+    "current_coordinates": {
+      "lat": 33.6748,
+      "lng": 73.0484
+    },
+    "workload_hours_assigned": 16,
+    "historical_earnings": 72000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": [
+          "17:00-19:00"
+        ]
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": []
+      }
+    ]
+  },
+  {
+    "id": "PROV_TUT_03",
+    "name": "Hina Batool",
+    "skills": [
+      "Science Tutoring",
+      "Math Tutoring",
+      "Chemistry Tutoring"
+    ],
+    "experience_level": "Junior",
+    "base_rate": 1200,
+    "rating": 4.0,
+    "review_recency_days": 14,
+    "reliability_score": 0.78,
+    "risk_score": 0.15,
+    "cancellation_rate": 0.1,
+    "current_coordinates": {
+      "lat": 33.6539,
+      "lng": 73.0127
+    },
+    "workload_hours_assigned": 12,
+    "historical_earnings": 38000,
+    "calendar_schedule": [
+      {
+        "date": "2026-05-19",
+        "blocks": []
+      },
+      {
+        "date": "2026-05-20",
+        "blocks": [
+          "16:00-18:00"
+        ]
+      }
+    ]
+  }
+]
