@@ -6380,3 +6380,1179 @@ All pipeline processes completed successfully. Completing lifecycle.
 Context notes: Full cycle complete.
 
 ---
+
+## [2026-05-21 05:30:49] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 05:31:01] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.6  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Generator Service", "location": "G-7", "urgency_level": "Medium", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.6, "clarifying_questions": ["What kind of service do you need for the generator (e.g., repair, installation, maintenance)?", "When would you prefer the service to be done?", "How urgent is this service?"]}
+
+---
+
+## [2026-05-21 05:31:03] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → RAISE_CLARIFICATION]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Parsed intent confidence score is below 0.70. Raising clarifying questions to resolve user intent.
+
+**Core Execution Output:**
+Context notes: Clarification loop triggered by low confidence fallback.
+
+---
+
+## [2026-05-21 05:31:21] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 05:31:27] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.65  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Generator Repair", "location": "G-7", "urgency_level": null, "preferred_time_window": null, "price_sensitivity": null, "confidence_score": 0.65, "clarifying_questions": ["What is the urgency level for this repair?", "When would you prefer the service to be done?", "Are you sensitive to the price, or is quality the main concern?"]}
+
+---
+
+## [2026-05-21 05:31:29] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → RAISE_CLARIFICATION]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Parsed intent confidence score is below 0.70. Raising clarifying questions to resolve user intent.
+
+**Core Execution Output:**
+Context notes: Clarification loop triggered by low confidence fallback.
+
+---
+
+## [2026-05-21 05:31:54] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 05:31:58] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.9  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Generator Repair", "location": "G-7", "urgency_level": "Medium", "preferred_time_window": "tomorrow", "price_sensitivity": "Medium", "confidence_score": 0.9, "clarifying_questions": []}
+
+---
+
+## [2026-05-21 05:32:00] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → TRIGGER_MATCHER]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Provider matching has not run yet. Invoking TRIGGER_MATCHER to search the provider directory.
+
+**Core Execution Output:**
+Context notes: Executing matching filters.
+
+---
+
+## [2026-05-21 05:32:00] [AGENT_2] [MATCHING_RATIONALE]
+**Confidence Score / Computational Values:**
+Top score: 0.4284  |  Evaluated: 1 providers
+
+**Step Rationale:**
+6-factor weighted scoring applied. Weights: {'rating': 0.25, 'reliability': 0.25, 'distance': 0.15, 'risk': 0.15, 'workload': 0.1, 'recency': 0.1}
+
+**Core Execution Output:**
+{
+  "status": "matched",
+  "selected": {
+    "id": "PROV_ELC_03",
+    "name": "Usman Ghani",
+    "score": 0.4284,
+    "distance_km": 2.95,
+    "travel_time_min": 7.1,
+    "has_clash": false,
+    "alt_slots": [],
+    "breakdown": {
+      "rating": 0.92,
+      "reliability": 0.93,
+      "distance": 0.148,
+      "risk": 0.05,
+      "workload": 1.0,
+      "recency": 0.956
+    }
+  },
+  "runner_up": null,
+  "total_evaluated": 1
+}
+
+---
+
+## [2026-05-21 05:32:02] [ANTIGRAVITY_ORCHESTRATOR] [STEP_3 → CALCULATE_PRICING]
+**Confidence Score / Computational Values:**
+Iteration: 3/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER']
+
+**Step Rationale:**
+Selected provider matched but price not calculated. Invoking CALCULATE_PRICING to generate itemized invoice.
+
+**Core Execution Output:**
+Context notes: Pricing engine dispatch.
+
+---
+
+## [2026-05-21 05:32:05] [AGENT_3] [PRICING_BREAKDOWN]
+**Confidence Score / Computational Values:**
+Final = (1600 × 1.35) + 150 + 0 − 116 = 2194
+
+**Step Rationale:**
+Complexity classified as Intermediate. Surge for Medium urgency.
+
+**Core Execution Output:**
+| Item | Amount (PKR) |
+|---|---|
+| Base Rate (Usman Ghani) | 1600 |
+| Complexity (Intermediate ×1.35) | 560 |
+| Surge (Medium) | 150 |
+| Distance Surcharge (3.0 km) | 0 |
+| Loyalty Discount | -116 |
+| **Final Price** | **2194** |
+
+---
+
+## [2026-05-21 05:32:07] [ANTIGRAVITY_ORCHESTRATOR] [STEP_4 → AWAIT_USER_CONFIRMATION]
+**Confidence Score / Computational Values:**
+Iteration: 4/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER', 'CALCULATE_PRICING']
+
+**Step Rationale:**
+Pricing is finalized. Pausing for user confirmation before payment and ledger write.
+
+**Core Execution Output:**
+Context notes: Quote ready — awaiting mobile app yes/no.
+
+---
+
+## [2026-05-21 05:32:16] [AGENT_PAYMENT] [LEDGER_WRITE]
+**Confidence Score / Computational Values:**
+Payment status: FAILED  |  Booking ID: BK-BBC803B5
+
+**Step Rationale:**
+Payment processed and booking row appended to ledger.
+
+**Core Execution Output:**
+{
+  "booking_id": "BK-BBC803B5",
+  "timestamp": "2026-05-21T05:32:16.073552",
+  "customer_query": "Mujhe kal generator repair wala chahiye in g 7",
+  "service_type": "Generator Repair",
+  "provider_id": "PROV_ELC_03",
+  "provider_name": "Usman Ghani",
+  "quoted_price": 2194,
+  "status": "payment_hold",
+  "payment_status": "FAILED",
+  "location": "G-7",
+  "urgency": "Medium"
+}
+
+---
+
+## [2026-05-21 06:00:53] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 06:01:01] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.3  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": null, "location": null, "urgency_level": null, "preferred_time_window": null, "price_sensitivity": null, "confidence_score": 0.3, "clarifying_questions": ["What service are you looking for?", "Which area of Islamabad are you in?"]}
+
+---
+
+## [2026-05-21 06:01:03] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → RAISE_CLARIFICATION]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Parsed intent confidence score is below 0.70. Raising clarifying questions to resolve user intent.
+
+**Core Execution Output:**
+Context notes: Clarification loop triggered by low confidence fallback.
+
+---
+
+## [2026-05-21 06:01:05] [AGENT_CLARIFY] [CLARIFICATION_REPLY]
+**Confidence Score / Computational Values:**
+locale: en  |  items: 2
+
+**Step Rationale:**
+Generated user-facing clarification.
+
+**Core Execution Output:**
+{"message": "Hello! How can I help you today? Please tell me what service you're looking for.", "missing_items": ["Service type", "Location"]}
+
+---
+
+## [2026-05-21 06:01:27] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 06:01:29] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.4  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Generator", "location": null, "urgency_level": null, "preferred_time_window": null, "price_sensitivity": null, "confidence_score": 0.4, "clarifying_questions": ["What kind of generator service do you need (e.g., repair, installation, rental)?", "In which area of Islamabad do you need the service?", "When would you like the service to be done?"]}
+
+---
+
+## [2026-05-21 06:01:31] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → RAISE_CLARIFICATION]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Parsed intent confidence score is below 0.70. Raising clarifying questions to resolve user intent.
+
+**Core Execution Output:**
+Context notes: Clarification loop triggered by low confidence fallback.
+
+---
+
+## [2026-05-21 06:01:33] [AGENT_CLARIFY] [CLARIFICATION_REPLY]
+**Confidence Score / Computational Values:**
+locale: en  |  items: 3
+
+**Step Rationale:**
+Generated user-facing clarification.
+
+**Core Execution Output:**
+{"message": "Sure, I can help you with a generator service! To assist you better, could you please tell me what kind of generator service you need (e.g., repair, installation, or rental)? Also, in which area of Islamabad do you need the service, and when would you like it to be done?", "missing_items": ["Type of generator service", "Location in Islamabad", "Preferred time"]}
+
+---
+
+## [2026-05-21 06:01:49] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 06:01:54] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.6  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": null, "location": "F-7", "urgency_level": "Medium", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.6, "clarifying_questions": ["What kind of repair do you need?"]}
+
+---
+
+## [2026-05-21 06:01:56] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → RAISE_CLARIFICATION]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Parsed intent confidence score is below 0.70. Raising clarifying questions to resolve user intent.
+
+**Core Execution Output:**
+Context notes: Clarification loop triggered by low confidence fallback.
+
+---
+
+## [2026-05-21 06:01:57] [AGENT_CLARIFY] [CLARIFICATION_REPLY]
+**Confidence Score / Computational Values:**
+locale: en  |  items: 1
+
+**Step Rationale:**
+Generated user-facing clarification.
+
+**Core Execution Output:**
+{"message": "Got it! You're looking for a repair service in F-7. To help you find the right professional, could you please tell me what kind of repair you need?", "missing_items": ["Type of repair"]}
+
+---
+
+## [2026-05-21 06:02:50] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 06:02:53] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.4  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Repair", "location": null, "urgency_level": null, "preferred_time_window": null, "price_sensitivity": null, "confidence_score": 0.4, "clarifying_questions": ["What kind of repair do you need? (e.g., AC repair, plumbing, electrical, appliance repair)"]}
+
+---
+
+## [2026-05-21 06:02:55] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → RAISE_CLARIFICATION]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Parsed intent confidence score is below 0.70. Raising clarifying questions to resolve user intent.
+
+**Core Execution Output:**
+Context notes: Clarification loop triggered by low confidence fallback.
+
+---
+
+## [2026-05-21 06:02:56] [AGENT_CLARIFY] [CLARIFICATION_REPLY]
+**Confidence Score / Computational Values:**
+locale: en  |  items: 1
+
+**Step Rationale:**
+Generated user-facing clarification.
+
+**Core Execution Output:**
+{"message": "No problem, I can help with repairs! To get started, could you please tell me what kind of repair you need? For example, is it for an AC, plumbing, electrical, or an appliance?", "missing_items": ["Type of repair"]}
+
+---
+
+## [2026-05-21 06:12:24] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 06:12:35] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.4  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": null, "location": null, "urgency_level": "Medium", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.4, "clarifying_questions": ["What kind of service do you need for the generator (e.g., repair, installation, rental)?", "Which sector in Islamabad do you need the service in?"]}
+
+---
+
+## [2026-05-21 06:12:36] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → RAISE_CLARIFICATION]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Required booking fields still incomplete after merge (service=None, location=None).
+
+**Core Execution Output:**
+Context notes: Clarification — missing service or sector only.
+
+---
+
+## [2026-05-21 06:12:41] [AGENT_CLARIFY] [CLARIFICATION_REPLY]
+**Confidence Score / Computational Values:**
+locale: en  |  items: 2
+
+**Step Rationale:**
+Generated user-facing clarification.
+
+**Core Execution Output:**
+{"message": "Hi there! You're looking for a generator service. To help you best, could you please tell me what kind of service you need for the generator (e.g., repair, installation, or rental)? Also, which sector in Islamabad are you located in?", "missing_items": ["Service type", "Location"]}
+
+---
+
+## [2026-05-21 06:13:32] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 06:13:35] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.9  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Generator Repair", "location": "G-7", "urgency_level": "Medium", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.9, "clarifying_questions": []}
+
+---
+
+## [2026-05-21 06:13:36] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → TRIGGER_MATCHER]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Provider matching has not run yet. Invoking TRIGGER_MATCHER to search the provider directory.
+
+**Core Execution Output:**
+Context notes: Executing matching filters.
+
+---
+
+## [2026-05-21 06:13:36] [AGENT_2] [MATCHING_RATIONALE]
+**Confidence Score / Computational Values:**
+Top score: 0.4284  |  Evaluated: 1 providers
+
+**Step Rationale:**
+6-factor weighted scoring applied. Weights: {'rating': 0.25, 'reliability': 0.25, 'distance': 0.15, 'risk': 0.15, 'workload': 0.1, 'recency': 0.1}
+
+**Core Execution Output:**
+{
+  "status": "matched",
+  "selected": {
+    "id": "PROV_ELC_03",
+    "name": "Usman Ghani",
+    "score": 0.4284,
+    "distance_km": 2.95,
+    "travel_time_min": 7.1,
+    "has_clash": false,
+    "alt_slots": [],
+    "breakdown": {
+      "rating": 0.92,
+      "reliability": 0.93,
+      "distance": 0.148,
+      "risk": 0.05,
+      "workload": 1.0,
+      "recency": 0.956
+    }
+  },
+  "runner_up": null,
+  "total_evaluated": 1
+}
+
+---
+
+## [2026-05-21 06:13:37] [ANTIGRAVITY_ORCHESTRATOR] [STEP_3 → CALCULATE_PRICING]
+**Confidence Score / Computational Values:**
+Iteration: 3/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER']
+
+**Step Rationale:**
+Selected provider matched but price not calculated. Invoking CALCULATE_PRICING to generate itemized invoice.
+
+**Core Execution Output:**
+Context notes: Pricing engine dispatch.
+
+---
+
+## [2026-05-21 06:13:44] [AGENT_3] [PRICING_BREAKDOWN]
+**Confidence Score / Computational Values:**
+Final = (1600 × 1.75) + 150 + 0 − 148 = 2802
+
+**Step Rationale:**
+Complexity classified as Complex. Surge for Medium urgency.
+
+**Core Execution Output:**
+| Item | Amount (PKR) |
+|---|---|
+| Base Rate (Usman Ghani) | 1600 |
+| Complexity (Complex ×1.75) | 1200 |
+| Surge (Medium) | 150 |
+| Distance Surcharge (3.0 km) | 0 |
+| Loyalty Discount | -148 |
+| **Final Price** | **2802** |
+
+---
+
+## [2026-05-21 06:13:45] [ANTIGRAVITY_ORCHESTRATOR] [STEP_4 → AWAIT_USER_CONFIRMATION]
+**Confidence Score / Computational Values:**
+Iteration: 4/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER', 'CALCULATE_PRICING']
+
+**Step Rationale:**
+Pricing is finalized. Pausing for user confirmation before payment and ledger write.
+
+**Core Execution Output:**
+Context notes: Quote ready — awaiting mobile app yes/no.
+
+---
+
+## [2026-05-21 06:13:49] [AGENT_PAYMENT] [LEDGER_WRITE]
+**Confidence Score / Computational Values:**
+Payment status: SUCCESS  |  Booking ID: BK-3645487A
+
+**Step Rationale:**
+Payment processed and booking row appended to ledger.
+
+**Core Execution Output:**
+{
+  "booking_id": "BK-3645487A",
+  "timestamp": "2026-05-21T06:13:49.608626",
+  "customer_query": "Mujhe generator repair chahiye in Islamabad g 7",
+  "service_type": "Generator Repair",
+  "provider_id": "PROV_ELC_03",
+  "provider_name": "Usman Ghani",
+  "quoted_price": 2802,
+  "status": "confirmed",
+  "payment_status": "SUCCESS",
+  "location": "G-7",
+  "urgency": "Medium"
+}
+
+---
+
+## [2026-05-21 06:19:58] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 06:20:03] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.9  |  locale: en
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Generator Repair", "location": "G-7", "urgency_level": "Medium", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.9, "clarifying_questions": []}
+
+---
+
+## [2026-05-21 06:20:04] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → TRIGGER_MATCHER]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Provider matching has not run yet. Invoking TRIGGER_MATCHER to search the provider directory.
+
+**Core Execution Output:**
+Context notes: Executing matching filters.
+
+---
+
+## [2026-05-21 06:20:04] [AGENT_2] [MATCHING_RATIONALE]
+**Confidence Score / Computational Values:**
+Top score: 0.4284  |  Evaluated: 1 providers
+
+**Step Rationale:**
+6-factor weighted scoring applied. Weights: {'rating': 0.25, 'reliability': 0.25, 'distance': 0.15, 'risk': 0.15, 'workload': 0.1, 'recency': 0.1}
+
+**Core Execution Output:**
+{
+  "status": "matched",
+  "selected": {
+    "id": "PROV_ELC_03",
+    "name": "Usman Ghani",
+    "score": 0.4284,
+    "distance_km": 2.95,
+    "travel_time_min": 7.1,
+    "has_clash": false,
+    "alt_slots": [],
+    "breakdown": {
+      "rating": 0.92,
+      "reliability": 0.93,
+      "distance": 0.148,
+      "risk": 0.05,
+      "workload": 1.0,
+      "recency": 0.956
+    }
+  },
+  "runner_up": null,
+  "total_evaluated": 1
+}
+
+---
+
+## [2026-05-21 06:20:05] [ANTIGRAVITY_ORCHESTRATOR] [STEP_3 → CALCULATE_PRICING]
+**Confidence Score / Computational Values:**
+Iteration: 3/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER']
+
+**Step Rationale:**
+Selected provider matched but price not calculated. Invoking CALCULATE_PRICING to generate itemized invoice.
+
+**Core Execution Output:**
+Context notes: Pricing engine dispatch.
+
+---
+
+## [2026-05-21 06:20:12] [AGENT_3] [PRICING_BREAKDOWN]
+**Confidence Score / Computational Values:**
+Final = (1600 × 1.75) + 150 + 0 − 148 = 2802
+
+**Step Rationale:**
+Complexity classified as Complex. Surge for Medium urgency.
+
+**Core Execution Output:**
+| Item | Amount (PKR) |
+|---|---|
+| Base Rate (Usman Ghani) | 1600 |
+| Complexity (Complex ×1.75) | 1200 |
+| Surge (Medium) | 150 |
+| Distance Surcharge (3.0 km) | 0 |
+| Loyalty Discount | -148 |
+| **Final Price** | **2802** |
+
+---
+
+## [2026-05-21 06:20:13] [ANTIGRAVITY_ORCHESTRATOR] [STEP_4 → AWAIT_USER_CONFIRMATION]
+**Confidence Score / Computational Values:**
+Iteration: 4/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER', 'CALCULATE_PRICING']
+
+**Step Rationale:**
+Pricing is finalized. Pausing for user confirmation before payment and ledger write.
+
+**Core Execution Output:**
+Context notes: Quote ready — awaiting mobile app yes/no.
+
+---
+
+## [2026-05-21 06:20:18] [AGENT_PAYMENT] [LEDGER_WRITE]
+**Confidence Score / Computational Values:**
+Payment status: FAILED  |  Booking ID: BK-E3BC50AA
+
+**Step Rationale:**
+Payment processed and booking row appended to ledger.
+
+**Core Execution Output:**
+{
+  "booking_id": "BK-E3BC50AA",
+  "timestamp": "2026-05-21T06:20:18.738372",
+  "customer_query": "Mujhe generator repair krwani hai in g7 Islamabad ",
+  "service_type": "Generator Repair",
+  "provider_id": "PROV_ELC_03",
+  "provider_name": "Usman Ghani",
+  "quoted_price": 2802,
+  "status": "payment_hold",
+  "payment_status": "FAILED",
+  "location": "G-7",
+  "urgency": "Medium"
+}
+
+---
+
+## [2026-05-21 07:36:01] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 07:36:57] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 07:37:06] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.9  |  locale: ur
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Electrical Repair", "location": "F-7", "urgency_level": "High", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.9, "clarifying_questions": []}
+
+---
+
+## [2026-05-21 07:38:45] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 07:38:53] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.9  |  locale: ur
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Electrical Repair", "location": "F-7", "urgency_level": "High", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.9, "clarifying_questions": []}
+
+---
+
+## [2026-05-21 07:38:54] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → TRIGGER_MATCHER]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Provider matching has not run yet. Invoking TRIGGER_MATCHER to search the provider directory.
+
+**Core Execution Output:**
+Context notes: Executing matching filters.
+
+---
+
+## [2026-05-21 07:38:54] [AGENT_2] [MATCHING_RATIONALE]
+**Confidence Score / Computational Values:**
+Top score: 0.4625  |  Evaluated: 2 providers
+
+**Step Rationale:**
+6-factor weighted scoring applied. Weights: {'rating': 0.25, 'reliability': 0.25, 'distance': 0.15, 'risk': 0.15, 'workload': 0.1, 'recency': 0.1}
+
+**Core Execution Output:**
+{
+  "status": "matched",
+  "selected": {
+    "id": "PROV_ELC_01",
+    "name": "Faisal Raza",
+    "score": 0.4625,
+    "distance_km": 1.29,
+    "travel_time_min": 3.1,
+    "has_clash": false,
+    "alt_slots": [],
+    "breakdown": {
+      "rating": 0.96,
+      "reliability": 0.96,
+      "distance": 0.065,
+      "risk": 0.03,
+      "workload": 1.0,
+      "recency": 0.967
+    }
+  },
+  "runner_up": {
+    "id": "PROV_ELC_02",
+    "name": "Bilal Ahmed",
+    "score": 0.3959
+  },
+  "total_evaluated": 2
+}
+
+---
+
+## [2026-05-21 07:38:55] [ANTIGRAVITY_ORCHESTRATOR] [STEP_3 → CALCULATE_PRICING]
+**Confidence Score / Computational Values:**
+Iteration: 3/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER']
+
+**Step Rationale:**
+Selected provider matched but price not calculated. Invoking CALCULATE_PRICING to generate itemized invoice.
+
+**Core Execution Output:**
+Context notes: Pricing engine dispatch.
+
+---
+
+## [2026-05-21 07:39:01] [AGENT_3] [PRICING_BREAKDOWN]
+**Confidence Score / Computational Values:**
+Final = (1400 × 1.35) + 400 + 0 − 114 = 2176
+
+**Step Rationale:**
+Complexity classified as Intermediate. Surge for High urgency.
+
+**Core Execution Output:**
+| Item | Amount (PKR) |
+|---|---|
+| Base Rate (Faisal Raza) | 1400 |
+| Complexity (Intermediate ×1.35) | 490 |
+| Surge (High) | 400 |
+| Distance Surcharge (1.3 km) | 0 |
+| Loyalty Discount | -114 |
+| **Final Price** | **2176** |
+
+---
+
+## [2026-05-21 07:39:02] [ANTIGRAVITY_ORCHESTRATOR] [STEP_4 → AWAIT_USER_CONFIRMATION]
+**Confidence Score / Computational Values:**
+Iteration: 4/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER', 'CALCULATE_PRICING']
+
+**Step Rationale:**
+Pricing is finalized. Pausing for user confirmation before payment and ledger write.
+
+**Core Execution Output:**
+Context notes: Quote ready — awaiting mobile app yes/no.
+
+---
+
+## [2026-05-21 07:39:06] [AGENT_PAYMENT] [LEDGER_WRITE]
+**Confidence Score / Computational Values:**
+Payment status: SUCCESS  |  Booking ID: BK-453F875B
+
+**Step Rationale:**
+Payment processed and booking row appended to ledger.
+
+**Core Execution Output:**
+{
+  "booking_id": "BK-453F875B",
+  "timestamp": "2026-05-21T07:39:06.656355",
+  "customer_query": "بجلی کا کام چاہیے ایف 7 سیکٹر میں، جلدی کریں",
+  "service_type": "Electrical Repair",
+  "provider_id": "PROV_ELC_01",
+  "provider_name": "Faisal Raza",
+  "quoted_price": 2176,
+  "status": "confirmed",
+  "payment_status": "SUCCESS",
+  "location": "F-7",
+  "urgency": "High"
+}
+
+---
+
+## [2026-05-21 08:17:14] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 08:17:22] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.9  |  locale: ur
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Electrical Repair", "location": "F-7", "urgency_level": "High", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.9, "clarifying_questions": []}
+
+---
+
+## [2026-05-21 08:17:23] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → TRIGGER_MATCHER]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Provider matching has not run yet. Invoking TRIGGER_MATCHER to search the provider directory.
+
+**Core Execution Output:**
+Context notes: Executing matching filters.
+
+---
+
+## [2026-05-21 08:17:23] [AGENT_2] [MATCHING_RATIONALE]
+**Confidence Score / Computational Values:**
+Top score: 0.4625  |  Evaluated: 2 providers
+
+**Step Rationale:**
+6-factor weighted scoring applied. Weights: {'rating': 0.25, 'reliability': 0.25, 'distance': 0.15, 'risk': 0.15, 'workload': 0.1, 'recency': 0.1}
+
+**Core Execution Output:**
+{
+  "status": "matched",
+  "selected": {
+    "id": "PROV_ELC_01",
+    "name": "Faisal Raza",
+    "score": 0.4625,
+    "distance_km": 1.29,
+    "travel_time_min": 3.1,
+    "has_clash": false,
+    "alt_slots": [],
+    "breakdown": {
+      "rating": 0.96,
+      "reliability": 0.96,
+      "distance": 0.065,
+      "risk": 0.03,
+      "workload": 1.0,
+      "recency": 0.967
+    }
+  },
+  "runner_up": {
+    "id": "PROV_ELC_02",
+    "name": "Bilal Ahmed",
+    "score": 0.3959
+  },
+  "total_evaluated": 2
+}
+
+---
+
+## [2026-05-21 08:17:24] [ANTIGRAVITY_ORCHESTRATOR] [STEP_3 → CALCULATE_PRICING]
+**Confidence Score / Computational Values:**
+Iteration: 3/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER']
+
+**Step Rationale:**
+Selected provider matched but price not calculated. Invoking CALCULATE_PRICING to generate itemized invoice.
+
+**Core Execution Output:**
+Context notes: Pricing engine dispatch.
+
+---
+
+## [2026-05-21 08:17:29] [AGENT_3] [PRICING_BREAKDOWN]
+**Confidence Score / Computational Values:**
+Final = (1400 × 1.35) + 400 + 0 − 114 = 2176
+
+**Step Rationale:**
+Complexity classified as Intermediate. Surge for High urgency.
+
+**Core Execution Output:**
+| Item | Amount (PKR) |
+|---|---|
+| Base Rate (Faisal Raza) | 1400 |
+| Complexity (Intermediate ×1.35) | 490 |
+| Surge (High) | 400 |
+| Distance Surcharge (1.3 km) | 0 |
+| Loyalty Discount | -114 |
+| **Final Price** | **2176** |
+
+---
+
+## [2026-05-21 08:17:30] [ANTIGRAVITY_ORCHESTRATOR] [STEP_4 → AWAIT_USER_CONFIRMATION]
+**Confidence Score / Computational Values:**
+Iteration: 4/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER', 'CALCULATE_PRICING']
+
+**Step Rationale:**
+Pricing is finalized. Pausing for user confirmation before payment and ledger write.
+
+**Core Execution Output:**
+Context notes: Quote ready — awaiting mobile app yes/no.
+
+---
+
+## [2026-05-21 08:17:34] [AGENT_PAYMENT] [LEDGER_WRITE]
+**Confidence Score / Computational Values:**
+Payment status: SUCCESS  |  Booking ID: BK-A0C635F0
+
+**Step Rationale:**
+Payment processed and booking row appended to ledger.
+
+**Core Execution Output:**
+{
+  "booking_id": "BK-A0C635F0",
+  "timestamp": "2026-05-21T08:17:34.232455",
+  "customer_query": "بجلی کا کام چاہیے ایف 7 سیکٹر میں، جلدی کریں",
+  "service_type": "Electrical Repair",
+  "provider_id": "PROV_ELC_01",
+  "provider_name": "Faisal Raza",
+  "quoted_price": 2176,
+  "status": "confirmed",
+  "payment_status": "SUCCESS",
+  "location": "F-7",
+  "urgency": "High"
+}
+
+---
+
+## [2026-05-21 08:28:29] [ANTIGRAVITY_ORCHESTRATOR] [STEP_1 → RUN_INTENT_PARSER]
+**Confidence Score / Computational Values:**
+Iteration: 1/10  |  History: []
+
+**Step Rationale:**
+Parsed intent is null. Automatically falling back to RUN_INTENT_PARSER action to parse raw request.
+
+**Core Execution Output:**
+Context notes: Executing backup parsing subroutine (parsed_intent not yet available).
+
+---
+
+## [2026-05-21 08:28:40] [AGENT_1] [INTENT_PARSE]
+**Confidence Score / Computational Values:**
+confidence_score: 0.9  |  locale: ur
+
+**Step Rationale:**
+Parsed input via Gemini.
+
+**Core Execution Output:**
+{"service_type": "Electrical Repair", "location": "F-7", "urgency_level": "High", "preferred_time_window": "ASAP", "price_sensitivity": "Medium", "confidence_score": 0.9, "clarifying_questions": []}
+
+---
+
+## [2026-05-21 08:28:41] [ANTIGRAVITY_ORCHESTRATOR] [STEP_2 → TRIGGER_MATCHER]
+**Confidence Score / Computational Values:**
+Iteration: 2/10  |  History: ['RUN_INTENT_PARSER']
+
+**Step Rationale:**
+Provider matching has not run yet. Invoking TRIGGER_MATCHER to search the provider directory.
+
+**Core Execution Output:**
+Context notes: Executing matching filters.
+
+---
+
+## [2026-05-21 08:28:41] [AGENT_2] [MATCHING_RATIONALE]
+**Confidence Score / Computational Values:**
+Top score: 0.4625  |  Evaluated: 2 providers
+
+**Step Rationale:**
+6-factor weighted scoring applied. Weights: {'rating': 0.25, 'reliability': 0.25, 'distance': 0.15, 'risk': 0.15, 'workload': 0.1, 'recency': 0.1}
+
+**Core Execution Output:**
+{
+  "status": "matched",
+  "selected": {
+    "id": "PROV_ELC_01",
+    "name": "Faisal Raza",
+    "score": 0.4625,
+    "distance_km": 1.29,
+    "travel_time_min": 3.1,
+    "has_clash": false,
+    "alt_slots": [],
+    "breakdown": {
+      "rating": 0.96,
+      "reliability": 0.96,
+      "distance": 0.065,
+      "risk": 0.03,
+      "workload": 1.0,
+      "recency": 0.967
+    }
+  },
+  "runner_up": {
+    "id": "PROV_ELC_02",
+    "name": "Bilal Ahmed",
+    "score": 0.3959
+  },
+  "total_evaluated": 2
+}
+
+---
+
+## [2026-05-21 08:28:42] [ANTIGRAVITY_ORCHESTRATOR] [STEP_3 → CALCULATE_PRICING]
+**Confidence Score / Computational Values:**
+Iteration: 3/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER']
+
+**Step Rationale:**
+Selected provider matched but price not calculated. Invoking CALCULATE_PRICING to generate itemized invoice.
+
+**Core Execution Output:**
+Context notes: Pricing engine dispatch.
+
+---
+
+## [2026-05-21 08:28:50] [AGENT_3] [PRICING_BREAKDOWN]
+**Confidence Score / Computational Values:**
+Final = (1400 × 1.35) + 400 + 0 − 114 = 2176
+
+**Step Rationale:**
+Complexity classified as Intermediate. Surge for High urgency.
+
+**Core Execution Output:**
+| Item | Amount (PKR) |
+|---|---|
+| Base Rate (Faisal Raza) | 1400 |
+| Complexity (Intermediate ×1.35) | 490 |
+| Surge (High) | 400 |
+| Distance Surcharge (1.3 km) | 0 |
+| Loyalty Discount | -114 |
+| **Final Price** | **2176** |
+
+---
+
+## [2026-05-21 08:28:51] [ANTIGRAVITY_ORCHESTRATOR] [STEP_4 → AWAIT_USER_CONFIRMATION]
+**Confidence Score / Computational Values:**
+Iteration: 4/10  |  History: ['RUN_INTENT_PARSER', 'TRIGGER_MATCHER', 'CALCULATE_PRICING']
+
+**Step Rationale:**
+Pricing is finalized. Pausing for user confirmation before payment and ledger write.
+
+**Core Execution Output:**
+Context notes: Quote ready — awaiting mobile app yes/no.
+
+---
+
+## [2026-05-21 08:28:55] [AGENT_PAYMENT] [LEDGER_WRITE]
+**Confidence Score / Computational Values:**
+Payment status: FAILED  |  Booking ID: BK-939460B6
+
+**Step Rationale:**
+Payment processed and booking row appended to ledger.
+
+**Core Execution Output:**
+{
+  "booking_id": "BK-939460B6",
+  "timestamp": "2026-05-21T08:28:55.396965",
+  "customer_query": "بجلی کا کام چاہیے ایف 7 سیکٹر میں، جلدی کریں",
+  "service_type": "Electrical Repair",
+  "provider_id": "PROV_ELC_01",
+  "provider_name": "Faisal Raza",
+  "quoted_price": 2176,
+  "status": "payment_hold",
+  "payment_status": "FAILED",
+  "location": "F-7",
+  "urgency": "High"
+}
+
+---
