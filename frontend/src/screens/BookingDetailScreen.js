@@ -34,7 +34,12 @@ export default function BookingDetailScreen() {
   const bookingId = params?.booking_id || 'BK-MOCK';
 
   useEffect(() => {
-    fetch(`${getBackendBase()}/api/bookings/${bookingId}`)
+    const base = getBackendBase();
+    if (!base) {
+      setLoading(false);
+      return;
+    }
+    fetch(`${base}/api/bookings/${bookingId}`)
       .then((res) => res.json())
       .then((data) => {
         setBooking(data);

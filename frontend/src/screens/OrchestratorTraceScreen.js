@@ -12,7 +12,13 @@ export default function OrchestratorTraceScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${getBackendBase()}/api/traces/latest?limit=100`)
+    const base = getBackendBase();
+    if (!base) {
+      setTraces(t('tracesFetchError', { msg: 'Backend URL not configured in this build.' }));
+      setLoading(false);
+      return;
+    }
+    fetch(`${base}/api/traces/latest?limit=100`)
       .then((res) => res.json())
       .then((data) => {
         setTraces(data.traces || t('noTraces'));

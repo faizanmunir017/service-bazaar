@@ -20,7 +20,7 @@ const translations = {
     serviceNotAvailable: 'Sorry, our services are currently not available in {{loc}}. Please select another location.',
     dashboard: 'Dashboard',
     serviceAssistant: 'Service Assistant',
-    appName: 'ServiceBazaar',
+    appName: 'Service Bazaar',
     loginTitle: 'Log in to your account',
     username: 'Username',
     password: 'Password',

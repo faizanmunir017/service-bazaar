@@ -1,4 +1,4 @@
-import { getBackendBase, API_PATHS } from '../config/api';
+import { getBackendBase, getBackendConfigError, API_PATHS } from '../config/api';
 
 const REQUEST_TIMEOUT_MS = 30000;
 
@@ -15,17 +15,25 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
 }
 
 function formatNetworkError(error) {
+  const configError = getBackendConfigError();
+  if (configError) return configError;
+
   if (error?.name === 'AbortError') {
     return 'We could not complete your request in time. Please check your internet connection and try again.';
   }
   const msg = error?.message || String(error);
   if (msg.includes('Network request failed') || msg.includes('Failed to fetch')) {
-    return 'Unable to connect to the service. Please check your internet connection and try again.';
+    return 'Unable to connect to the service. Check your internet connection and that the backend URL is correct in the app build.';
   }
   return msg;
 }
 
 export async function checkBackendHealth() {
+  const configError = getBackendConfigError();
+  if (configError) {
+    return { ok: false, error: configError };
+  }
+
   const base = getBackendBase();
   try {
     const response = await fetchWithTimeout(`${base}${API_PATHS.health}`, {}, 8000);
@@ -40,6 +48,11 @@ export async function checkBackendHealth() {
 }
 
 export async function submitServiceRequest(message, locale = 'en', location = null) {
+  const configError = getBackendConfigError();
+  if (configError) {
+    return { ok: false, error: configError };
+  }
+
   const base = getBackendBase();
 
   try {
