@@ -1,14 +1,2 @@
 booking_id,timestamp,customer_query,service_type,provider_id,provider_name,quoted_price,status,payment_status,location,urgency
-BK-E5D4106B,2026-05-20T15:15:16.391941,URGENT: Pipe burst in my kitchen in Blue Area! Water everywhere!,Plumbing,PROV_PLB_01,Hamza Ali,2036,confirmed,SUCCESS,BLUE AREA,High
-BK-854F156C,2026-05-20T16:21:22.997133,G4 mein ac wala bhej den,AC Repair,PROV_AC_01,Asif Khan,2103,confirmed,SUCCESS,Islamabad,Medium
-BK-DEED17CC,2026-05-21T00:09:50.935588,"AC bilkul kam ni kr rha, kal sbaah G-13 me technician chahye, bjut kam h",AC Repair,PROV_AC_01,Asif Khan,2304,confirmed,SUCCESS,G-13,High
-BK-1565710D,2026-05-21T00:13:01.616225,"mujhe bacho k lye math tutor chahiye f-7 sector main budget issue nahi hai""",Math Tutoring,PROV_TUT_01,Dr. Ayesha Siddiqui,3468,confirmed,SUCCESS,F-7,Medium
-BK-3E9F8BE0,2026-05-21T00:30:48.615743,mujhe generator repair chahiye F-10 me,Generator Repair,PROV_ELC_03,Usman Ghani,2194,confirmed,SUCCESS,F-10,Medium
-BK-C1A60A87,2026-05-21T01:37:06.389442,Generator repair in islamabad g 13,Generator Repair,PROV_ELC_03,Usman Ghani,2290,confirmed,SUCCESS,G-13,Medium
-BK-A254E5C1,2026-05-21T01:50:27.287840,Tomorrow generator repair chahiye in Islamabad f 7 sector,Generator Repair,PROV_ELC_03,Usman Ghani,2194,payment_hold,FAILED,F-7,Medium
-BK-00F3C048,2026-05-21T01:58:55.102754,Mujhe generator repair chahiye in F-3 Islamabad ,Generator Repair,PROV_ELC_03,Usman Ghani,2802,confirmed,SUCCESS,F-3,Medium
-BK-450F2559,2026-05-21T04:53:30.239669,Electrician chahiye in F 7 sector,Electrical Repair,PROV_ELC_01,Faisal Raza,1938,confirmed,SUCCESS,F-7,Medium
-BK-9C3A0FCA,2026-05-21T05:08:30.284273,Mujhe generator wala chahiye in g7 kal,Generator Service,PROV_ELC_03,Usman Ghani,2194,confirmed,SUCCESS,G-7,Medium
-BK-BBC803B5,2026-05-21T05:32:16.073552,Mujhe kal generator repair wala chahiye in g 7,Generator Repair,PROV_ELC_03,Usman Ghani,2194,payment_hold,FAILED,G-7,Medium
-BK-3645487A,2026-05-21T06:13:49.608626,Mujhe generator repair chahiye in Islamabad g 7,Generator Repair,PROV_ELC_03,Usman Ghani,2802,confirmed,SUCCESS,G-7,Medium
-BK-E3BC50AA,2026-05-21T06:20:18.738372,Mujhe generator repair krwani hai in g7 Islamabad ,Generator Repair,PROV_ELC_03,Usman Ghani,2802,payment_hold,FAILED,G-7,Medium
+BK-939460B6,2026-05-21T08:28:55.396965,بجلی کا کام چاہیے ایف 7 سیکٹر میں، جلدی کریں,Electrical Repair,PROV_ELC_01,Faisal Raza,2176,payment_hold,FAILED,F-7,High
