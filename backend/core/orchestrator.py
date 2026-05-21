@@ -13,6 +13,9 @@ from core.gemini_client import MODEL, USE_RULE_ORCHESTRATOR, describe_api_error,
 from core.gemini_retry import generate_content_with_retry
 from agents.matcher import agent_2_match, rollback_to_runner_up
 from agents.pricing import agent_3_price
+from agents.clarification import generate_clarification_response
+from agents.intent_utils import should_raise_clarification
+from core.session_intent import load_prior_intent
 
 ORCHESTRATOR_PROMPT = """You are the ServiceBazaar Antigravity Swarm Orchestrator.
 Your job is to drive an informal-economy service request through its full lifecycle
@@ -55,21 +58,6 @@ You MUST return a JSON object with exactly these three keys:
 }}"""
 
 MAX_SWARM_ITERATIONS = 10
-
-def _clarification_intro_note(locale: str) -> str:
-    """User-facing clarification intro in the app UI language."""
-    texts = {
-        "ur": (
-            "ہمیں درست ٹیکنیشن بھیجنے کے لیے مزید معلومات درکار ہیں۔ "
-            "براہ کرم ذیل میں سے ایک سوال کا جواب منتخب کریں یا نیچے تفصیل لکھیں۔"
-        ),
-        "en": (
-            "We need a bit more detail to match the right technician. "
-            "Please tap one of the suggestions below or type your answer in the box."
-        ),
-    }
-    key = locale if locale in texts else "en"
-    return texts[key]
 
 def _write_json(path, obj):
     with open(path, "w", encoding="utf-8") as f:
@@ -127,11 +115,14 @@ def _fallback_orchestrate(state: dict) -> dict:
         }
 
     parsed = state.get("parsed_intent") or {}
-    if parsed.get("confidence_score", 1.0) < 0.70 and "RAISE_CLARIFICATION" not in history:
+    if should_raise_clarification(parsed) and "RAISE_CLARIFICATION" not in history:
         return {
-            "reasoning_trace": "Parsed intent confidence score is below 0.70. Raising clarifying questions to resolve user intent.",
+            "reasoning_trace": (
+                "Required booking fields still incomplete after merge "
+                f"(service={parsed.get('service_type')}, location={parsed.get('location')})."
+            ),
             "next_action": "RAISE_CLARIFICATION",
-            "updated_context_notes": "Clarification loop triggered by low confidence fallback."
+            "updated_context_notes": "Clarification — missing service or sector only.",
         }
 
     if state.get("matching_data") is None:
@@ -156,11 +147,11 @@ def _fallback_orchestrate(state: dict) -> dict:
             "updated_context_notes": "Pricing engine dispatch."
         }
 
-    if state.get("booking_status") == "pending":
+    if state.get("pricing_data") is not None and state.get("booking_status") == "pending":
         return {
-            "reasoning_trace": "Pricing is finalized. Proceeding to PROCESS_BOOKING to run transaction and save to append-only ledger.",
-            "next_action": "PROCESS_BOOKING",
-            "updated_context_notes": "Payment gateway processing."
+            "reasoning_trace": "Pricing is finalized. Pausing for user confirmation before payment and ledger write.",
+            "next_action": "AWAIT_USER_CONFIRMATION",
+            "updated_context_notes": "Quote ready — awaiting mobile app yes/no."
         }
 
     if state.get("booking_status") == "payment_failed":
@@ -176,13 +167,16 @@ def _fallback_orchestrate(state: dict) -> dict:
         "updated_context_notes": "Full cycle complete."
     }
 
-async def run_agentic_swarm(raw_text: str, locale: str = "en", history: list[dict] = [], location: str | None = None):
+async def run_agentic_swarm(raw_text: str, locale: str = "en", location: str | None = None):
     loc = locale if locale in ("en", "ur") else "en"
+    prior_intent = load_prior_intent()
+    service_area = (location or "Islamabad").strip() or "Islamabad"
+
     _write_json(REQUEST_PATH, {
         "message": raw_text,
         "raw_input": raw_text,
         "locale": loc,
-        "location": "Islamabad",
+        "location": service_area,
         "status": "pending",
         "timestamp": datetime.now().isoformat()
     })
@@ -192,8 +186,8 @@ async def run_agentic_swarm(raw_text: str, locale: str = "en", history: list[dic
     state: dict = {
         "raw_input": raw_text,
         "locale": loc,
-        "location": "Islamabad",
-        "request_history": [],
+        "location": service_area,
+        "prior_intent":     prior_intent,
         "parsed_intent":  None,
         "matching_data":  None,
         "pricing_data":   None,
@@ -209,7 +203,7 @@ async def run_agentic_swarm(raw_text: str, locale: str = "en", history: list[dic
 
     while cycle_active and iterations < MAX_SWARM_ITERATIONS:
         iterations += 1
-        await asyncio.sleep(2.0)
+        await asyncio.sleep(1.0)
 
         prompt = ORCHESTRATOR_PROMPT.format(
             state=json.dumps(
@@ -257,7 +251,11 @@ async def run_agentic_swarm(raw_text: str, locale: str = "en", history: list[dic
 
         try:
             if action == "RUN_INTENT_PARSER":
-                state["parsed_intent"] = await agent_1_parse(state["raw_input"], state["locale"])
+                state["parsed_intent"] = await agent_1_parse(
+                    state["raw_input"],
+                    state["locale"],
+                    state.get("prior_intent"),
+                )
 
             elif action == "TRIGGER_MATCHER":
                 state["matching_data"] = await agent_2_match(state["parsed_intent"])
@@ -271,6 +269,22 @@ async def run_agentic_swarm(raw_text: str, locale: str = "en", history: list[dic
                 state["pricing_data"] = await agent_3_price(
                     state["parsed_intent"], provider, sel["distance_km"]
                 )
+
+            elif action == "AWAIT_USER_CONFIRMATION":
+                state["booking_status"] = "awaiting_confirmation"
+                _write_json(RESPONSE_PATH, {
+                    "status": "awaiting_confirmation",
+                    "data": {
+                        "intent":      state["parsed_intent"],
+                        "match":       state["matching_data"],
+                        "pricing":     state["pricing_data"],
+                        "raw_input":   state["raw_input"],
+                        "locale":      state.get("locale", "en"),
+                        "swarm_steps": state["history"],
+                    },
+                    "timestamp": datetime.now().isoformat(),
+                })
+                cycle_active = False
 
             elif action == "PROCESS_BOOKING":
                 result = await execute_payment_and_ledger(state)
@@ -289,13 +303,18 @@ async def run_agentic_swarm(raw_text: str, locale: str = "en", history: list[dic
             elif action == "RAISE_CLARIFICATION":
                 state["booking_status"] = "clarification_needed"
                 intent = state["parsed_intent"] or {}
-                note = _clarification_intro_note(state.get("locale", "en"))
+                clar = await generate_clarification_response(
+                    state["raw_input"],
+                    intent,
+                    state.get("locale", "en"),
+                )
+                missing = clar.get("missing_items") or intent.get("clarifying_questions", [])
                 _write_json(RESPONSE_PATH, {
                     "status": "clarification_needed",
                     "data": {
                         "intent":    intent,
-                        "questions": intent.get("clarifying_questions", []),
-                        "orchestrator_note": note,
+                        "questions": missing,
+                        "orchestrator_note": clar.get("message", ""),
                     },
                     "timestamp": datetime.now().isoformat(),
                 })
@@ -320,7 +339,9 @@ async def run_agentic_swarm(raw_text: str, locale: str = "en", history: list[dic
             cycle_active = False
 
 
-    if state["booking_status"] in ("confirmed", "rollback_assigned"):
+    if state["booking_status"] == "awaiting_confirmation":
+        pass  # response already written in AWAIT_USER_CONFIRMATION
+    elif state["booking_status"] in ("confirmed", "rollback_assigned"):
         _write_json(RESPONSE_PATH, {
             "status":    "processed",
             "data": {

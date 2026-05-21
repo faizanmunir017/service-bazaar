@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, BackgroundTasks, status
 from pydantic import BaseModel
 from controllers.request_controller import handle_request
@@ -8,7 +10,7 @@ router = APIRouter()
 class ServiceRequest(BaseModel):
     message: str
     locale: str = "en"
-    location: str | None = None
+    location: Optional[str] = None
 
 
 @router.post("/request", status_code=status.HTTP_202_ACCEPTED)
